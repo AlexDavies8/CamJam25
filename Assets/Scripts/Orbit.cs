@@ -21,7 +21,7 @@ public class Orbit : MonoBehaviour
         currentOrbitPosition = Mathf.Atan2(startOffset.y, startOffset.x);
     }
 
-    void Update()
+    void FixedUpdate()
     {
         currentOrbitPosition = (currentOrbitPosition + ( 2 * Mathf.PI * (Time.deltaTime / orbitPeriod))) % (2 * Mathf.PI);
 
