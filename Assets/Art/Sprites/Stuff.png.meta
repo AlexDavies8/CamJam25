@@ -79,7 +79,7 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: 1
+    filterMode: 0
     aniso: 1
     mipBias: 0
     wrapU: 1
@@ -325,9 +325,9 @@ TextureImporter:
         y: 74
         width: 21
         height: 21
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 1, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
@@ -484,7 +484,22 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      Stuff_0: -28393214552563634
+      Stuff_1: 2334715528680989207
+      Stuff_10: 4261142732100281354
+      Stuff_11: 6864603014133690573
+      Stuff_12: 1821401915629090595
+      Stuff_13: -1375191034538768445
+      Stuff_14: 7619771958558503305
+      Stuff_2: -9143257243613144396
+      Stuff_3: -6234350319375162970
+      Stuff_4: -7476468578618564806
+      Stuff_5: -2637056189634824953
+      Stuff_6: -8381985199714011298
+      Stuff_7: -4576955362049212203
+      Stuff_8: 2175327658469873360
+      Stuff_9: 4569066192572822150
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
