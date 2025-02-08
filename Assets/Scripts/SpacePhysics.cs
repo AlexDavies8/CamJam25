@@ -5,11 +5,15 @@ public class SpacePhysics : MonoBehaviour
 {
     [Header("Config")]
     public float stickThreshold = 5f;
+    public float surfaceOffset = 0.5f;
+    public float friction = 2f;
 
     private Vector2 velocity = Vector2.right * 5f;
-    private Planet currentPlanet = null;
-    private float planetPos = 0f;
-    private float planetVel = 0f;
+    public Planet currentPlanet = null;
+    public float planetPos = 0f;
+    public float planetVel = 0f;
+
+    public bool OnPlanet => currentPlanet is not null;
     
     private void FixedUpdate()
     {
@@ -20,7 +24,7 @@ public class SpacePhysics : MonoBehaviour
             foreach (var planet in Planet.Planets)
             {
                 var planetDiff = planet.transform.position - transform.position;
-                var dist = planetDiff.magnitude - planet.SurfaceDistance(transform.position);
+                var dist = planetDiff.magnitude - planet.SurfaceDistance(transform.position) - surfaceOffset;
                 if (dist < minDist)
                 {
                     minDist = dist;
@@ -45,18 +49,17 @@ public class SpacePhysics : MonoBehaviour
         }
         else
         {
-            //planetVel *= 0.995f;
+            planetVel = Mathf.Lerp(planetVel, 0f, 1 - Mathf.Exp(-friction * Time.deltaTime));
             planetPos += planetVel * Time.deltaTime;
-            var newPos = currentPlanet.SurfacePoint(planetPos);
+            
+            var outDir = (Vector2)(transform.position - currentPlanet.transform.position).normalized;
+            var newPos = currentPlanet.SurfacePoint(planetPos) + outDir * surfaceOffset;
             transform.right = -currentPlanet.SurfaceTangent(planetPos);
 
-            var outDir = (transform.position - currentPlanet.transform.position).normalized;
             var outVel = -Vector2.Dot(newPos - (Vector2)transform.position, outDir) / Time.deltaTime;
-            Debug.Log(outVel);
             if (outVel > stickThreshold)
             {
-                var diff = transform.position - currentPlanet.transform.position;
-                velocity = currentPlanet.GetLinearVelocity(planetPos, planetVel) + outVel * (Vector2)outDir;
+                velocity = currentPlanet.GetLinearVelocity(planetPos, planetVel) + outVel * outDir;
                 currentPlanet = null;
             }
             

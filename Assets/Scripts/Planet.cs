@@ -18,8 +18,16 @@ public class Planet : MonoBehaviour
         public float offset;
         public int waveCount;
     }
+
+    public struct Impact
+    {
+        public float position;
+        public float strength;
+    }
     
     public static List<Planet> Planets = new();
+
+    public List<Impact> impacts = new();
 
     private void OnEnable()
     {
@@ -31,6 +39,19 @@ public class Planet : MonoBehaviour
         Planets.Remove(this);
     }
 
+    private void Update()
+    {
+        for (int i = 0; i < impacts.Count; i++)
+        {
+            var impact = impacts[i];
+
+            impact.strength -= Time.deltaTime;
+            
+            if (impact.strength <= 0) impacts.RemoveAt(i);
+            else impacts[i] = impact;
+        }
+    }
+
     public float SurfaceDistance(float frac)
     {
         var dist = radius;
@@ -39,16 +60,22 @@ public class Planet : MonoBehaviour
             var t = Time.time * layer.frequency + layer.offset + frac * layer.waveCount;
             dist += Mathf.Sin(t * Mathf.PI * 2) * layer.amplitude * wobbleStrength;
         }
+        foreach (var impact in impacts)
+        {
+            var fracDist = Mathf.Abs(impact.position - frac);
+            dist -= 0.01f * impact.strength / (fracDist * fracDist);
+        }
         return dist;
     }
 
     public Vector2 SurfaceTangent(float frac)
     {
-        return (SurfacePoint(frac + 0.001f) - SurfacePoint(frac)).normalized;
+        return (SurfacePoint(frac + 0.01f) - SurfacePoint(frac)).normalized;
     }
 
     public float SurfaceDistance(Vector2 from)
     {
+        from -= (Vector2)transform.position;
         var frac = Mathf.Atan2(from.y, from.x) / (Mathf.PI * 2);
         return SurfaceDistance(frac);
     }
@@ -56,7 +83,7 @@ public class Planet : MonoBehaviour
     public Vector2 SurfacePoint(float frac)
     {
         var dist = SurfaceDistance(frac);
-        return new Vector2(Mathf.Cos(frac * Mathf.PI * 2), Mathf.Sin(frac * Mathf.PI * 2)) * dist;
+        return new Vector2(Mathf.Cos(frac * Mathf.PI * 2), Mathf.Sin(frac * Mathf.PI * 2)) * dist + (Vector2)transform.position;
     }
 
     public float GetAngularVelocity(Vector2 pos, Vector2 linear)

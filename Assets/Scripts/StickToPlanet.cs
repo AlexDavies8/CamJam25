@@ -1,6 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
+[ExecuteInEditMode]
 public class StickToPlanet : MonoBehaviour
 {
     public Planet planet;

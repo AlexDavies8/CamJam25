@@ -24,7 +24,7 @@ public class PlanetCollider : MonoBehaviour
         {
             var frac = (float)i / resolution;
             var dir = new Vector2(Mathf.Cos(frac * Mathf.PI * 2), Mathf.Sin(frac * Mathf.PI * 2));
-            var dist = planet.SurfaceDistance(dir);
+            var dist = planet.SurfaceDistance(frac);
             var pos = dir * dist;
             points[i] = pos;
         }
