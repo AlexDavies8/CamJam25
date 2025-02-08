@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.U2D;
 
@@ -7,7 +9,7 @@ public class PlanetRenderer : MonoBehaviour
 {
     [Header("Setup")]
     public LineRenderer outline;
-    public SpriteShapeController fill;
+    public DeformableSprite fill;
     
     [Header("Config")]
     public int resolution = 50;
@@ -22,7 +24,7 @@ public class PlanetRenderer : MonoBehaviour
 
     private void OnValidate()
     {
-        if (resolution != outline.positionCount)
+        if (resolution != outline.positionCount || (fill && (fill.vertices is null || resolution != fill.vertices.Count)))
         {
             UpdateResolution();
         }
@@ -31,8 +33,7 @@ public class PlanetRenderer : MonoBehaviour
     private void UpdateResolution()
     {
         outline.positionCount = resolution;
-        fill.spline.Clear();
-        for (int i = 0; i < resolution; i++) fill.spline.InsertPointAt(i, Vector2.one * i);
+        if (fill) fill.vertices = new Vector2[resolution].ToList();
     }
 
     private void Update()
@@ -44,7 +45,8 @@ public class PlanetRenderer : MonoBehaviour
             var dist = planet.SurfaceHeight(angle);
             var pos = dir * dist;
             outline.SetPosition(i, pos);
-            fill.spline.SetPosition(i, pos);
+            if (fill) fill.vertices[i] = pos;
         }
+        if (fill) fill.UpdateMesh();
     }
 }
