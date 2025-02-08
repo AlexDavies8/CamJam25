@@ -21,8 +21,10 @@ public class Planet : MonoBehaviour
 
     public struct Impact
     {
-        public float position;
-        public float strength;
+        public float frac;
+        public float influence;
+        public float vel;
+        public float pos;
     }
     
     public static List<Planet> Planets = new();
@@ -45,9 +47,12 @@ public class Planet : MonoBehaviour
         {
             var impact = impacts[i];
 
-            impact.strength -= Time.deltaTime;
+            impact.influence -= Time.deltaTime;
+
+            impact.vel -= impact.pos * Time.deltaTime * 20f;
+            impact.pos += impact.vel * Time.deltaTime;
             
-            if (impact.strength <= 0) impacts.RemoveAt(i);
+            if (impact.influence <= 0) impacts.RemoveAt(i);
             else impacts[i] = impact;
         }
     }
@@ -62,8 +67,11 @@ public class Planet : MonoBehaviour
         }
         foreach (var impact in impacts)
         {
-            var fracDist = Mathf.Abs(impact.position - frac);
-            dist -= 0.01f * impact.strength / (fracDist * fracDist);
+            var diff = (impact.frac - frac) % 1;
+            if (diff < 0) diff++;
+            var fracDist = Mathf.Min(diff, 1f - diff);
+            var influence = Mathf.Max(0, 1 - fracDist * radius * 6f) * impact.influence;
+            dist -= influence * impact.pos;
         }
         return dist;
     }
