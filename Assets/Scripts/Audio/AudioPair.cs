@@ -19,6 +19,11 @@ public class AudioPair : MonoBehaviour {
             audio2.volume = volume;
         }
     }
+    
+    public void Stop() {
+        audio1.source.Stop();
+        audio2.source.Stop();
+    }
 
     public void Play(AudioClip clip, double time) {
         audios[playing].clip = clip;

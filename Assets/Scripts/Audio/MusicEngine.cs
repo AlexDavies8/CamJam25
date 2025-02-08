@@ -163,6 +163,8 @@ public class MusicEngine : MonoBehaviour {
     public List<string> queuedLoops;                // Next loops that must play for the queued melodies
     public int loopCount => currLoops.Count + queuedLoops.Count;
 
+    public bool playing = true;
+
     public AudioPair loopAudio;
     [SerializeField]
     public FullAudioSource[] melAudio;
@@ -197,6 +199,7 @@ public class MusicEngine : MonoBehaviour {
     double buffer = 0.5;
     double prevTime = 0;
 
+    [SerializeField]
     int started;
 
     // Start is called before the first frame update
@@ -222,157 +225,209 @@ public class MusicEngine : MonoBehaviour {
     }
 
     void Update() {
-        melodyInfo.Clear();
-        foreach (var kvp in melodies) {
-            melodyInfo.Add(new MelodyQueueInfo(kvp.Key, kvp.Value.loopsLeft));
-        }
-        queuedMelodyInfo.Clear();
-        foreach (var kvp in queuedMelodies) {
-            queuedMelodyInfo.Add(new MelodyQueueInfo(kvp.Key, kvp.Value.loopsLeft));
-        }
-        if (currentTrack == null) {
-            Debug.Log("No track??" + started.ToString());
-        }
-
-        double time = AudioSettings.dspTime;
-        // Play scheduled stuff
-        if (started < 3) {
-            started++;
-            if (started == 3) {
-                startTime = time + buffer;
-                QueueNextGroup(1, currentTrack.startGroup);
-                started++;
-                //PlayNext();
-                //if (nextLoop != null) {
-                    //Debug.Log("Already scheduled??");
-                //}
-                //Debug.Log(startTime.ToString());
-                //Debug.Log(nextStartTime.ToString());
+        if (playing) {
+            melodyInfo.Clear();
+            foreach (var kvp in melodies) {
+                melodyInfo.Add(new MelodyQueueInfo(kvp.Key, kvp.Value.loopsLeft));
             }
-        } else {
-
-            if (currLoops.Count == 0) {
-                currLoops.Add(currentGroup);
+            queuedMelodyInfo.Clear();
+            foreach (var kvp in queuedMelodies) {
+                queuedMelodyInfo.Add(new MelodyQueueInfo(kvp.Key, kvp.Value.loopsLeft));
+            }
+            if (currentTrack == null) {
+                Debug.Log("No track??" + started.ToString());
             }
 
-            List<string> remove = new();
-
+            double time = AudioSettings.dspTime;
             // Play scheduled stuff
-            if (nextStartTime > 0 && time > nextStartTime) {
-                // Increment current loop
-                PlayNext();
-                currLoops.RemoveAt(0);
-                bps = currentLoop.bps;
-                bars = currentLoop.bars;
-                bar = 0;
-                barStart = 0;
-                prog = currentLoop.chordProgression;
-                chordInd = 0;
-                chordStart = 0;
-                foreach (var kvp in melodies) {
-                    kvp.Value.loopsLeft--;
-                    if (kvp.Value.loopsLeft == 0) {
+            if (started < 3) {
+                started++;
+                if (started == 3) {
+                    startTime = time + buffer;
+                    QueueNextGroup(1, currentTrack.startGroup);
+                    started++;
+                    //PlayNext();
+                    //if (nextLoop != null) {
+                    //Debug.Log("Already scheduled??");
+                    //}
+                    //Debug.Log(startTime.ToString());
+                    //Debug.Log(nextStartTime.ToString());
+                }
+            } else {
+
+                if (currLoops.Count == 0) {
+                    currLoops.Add(currentGroup);
+                }
+
+                List<string> remove = new();
+
+                // Play scheduled stuff
+                if (nextStartTime > 0 && time > nextStartTime) {
+                    // Increment current loop
+                    PlayNext();
+                    currLoops.RemoveAt(0);
+                    bps = currentLoop.bps;
+                    bars = currentLoop.bars;
+                    bar = 0;
+                    barStart = 0;
+                    prog = currentLoop.chordProgression;
+                    chordInd = 0;
+                    chordStart = 0;
+                    foreach (var kvp in melodies) {
+                        kvp.Value.loopsLeft--;
+                        if (kvp.Value.loopsLeft == 0) {
+                            remove.Add(kvp.Key);
+                            freeAudio.Add(kvp.Value.playingOn);
+                        }
+                    }
+                    foreach (var k in remove) {
+                        melodies.Remove(k);
+                    }
+                    remove.Clear();
+                    foreach (var kvp in queuedMelodies) {
+                        kvp.Value.loopsLeft--;
+                    }
+                }
+
+                beats = (time - startTime) * bps;
+                if (bar < bars.Length - 1 && beats - barStart > bars[bar]) {
+                    barStart += bars[bar];
+                    bar++;
+                    foreach (var v in queuedJingles) {
+                        v.barsLeft--;
+                    }
+                }
+                for (int i = 0; i < jingles.Count;) {
+                    var v = jingles[i];
+                    if (v.d.clip.length - v.playingOn.source.time < 1) {
+                        freeJingleAudio.Add(v.playingOn);
+                        jingles.RemoveAt(i);
+                    } else {
+                        i++;
+                    }
+                }
+                if (chordInd < prog.Count - 1 && beats - chordStart > prog.chords[chordInd].beats) {
+                    chordStart += prog.chords[chordInd].beats;
+                    chordInd++;
+                }
+                foreach (var kvp in queuedMelodies) {
+                    if (kvp.Value.loopsLeft == 0 && time > kvp.Value.d.beatsIntoLoop / bps + startTime) {
+                        if (freeAudio.Count > 0) {
+                            var a = freeAudio[^1];
+                            freeAudio.RemoveAt(freeAudio.Count - 1);
+                            a.clip = kvp.Value.d.clip;
+                            a.source.PlayScheduled(startTime + kvp.Value.d.beatsIntoLoop / bps + delay);
+                            kvp.Value.playingOn = a;
+                            kvp.Value.loopsLeft = kvp.Value.d.end;
+                            melodies[kvp.Key] = kvp.Value;
+                            for (int i = currLoops.Count; i < kvp.Value.d.overLoop.Count; i++) {
+                                currLoops.Add(queuedLoops[0]);
+                                queuedLoops.RemoveAt(0);
+                            }
+                        } else {
+                            Debug.Log("Failed to play melody due to lack of Audio Sources");
+                        }
                         remove.Add(kvp.Key);
-                        freeAudio.Add(kvp.Value.playingOn);
+                    } else if (kvp.Value.loopsLeft < 0) {
+                        remove.Add(kvp.Key);
                     }
                 }
                 foreach (var k in remove) {
-                    melodies.Remove(k);
+                    queuedMelodies.Remove(k);
                 }
                 remove.Clear();
-                foreach (var kvp in queuedMelodies) {
-                    kvp.Value.loopsLeft--;
+                for (int i = 0; i < queuedJingles.Count;) {
+                    var v = queuedJingles[i];
+                    if (v.barsLeft == 0 && beats - barStart > bars[bar] - v.beats) {
+                        if (freeJingleAudio.Count > 0) {
+                            var a = freeJingleAudio[^1];
+                            freeJingleAudio.RemoveAt(freeJingleAudio.Count - 1);
+                            a.clip = v.d.clip;
+                            a.source.PlayScheduled(startTime + (barStart + bars[bar] - v.beats) / bps + delay);
+                            v.playingOn = a;
+                            v.barsLeft = 0;
+                            jingles.Add(v);
+                        } else {
+                            Debug.Log("Failed to play jingle due to lack of Audio Sources");
+                        }
+                        queuedJingles.RemoveAt(i);
+                    } else {
+                        i++;
+                    }
                 }
-            }
 
-            beats = (time - startTime) * bps;
-            if (bar < bars.Length - 1 && beats - barStart > bars[bar]) {
-                barStart += bars[bar];
-                bar++;
-                foreach (var v in queuedJingles) {
-                    v.barsLeft--;
-                }
-            }
-            for (int i = 0; i < jingles.Count; ) {
-                var v = jingles[i];
-                if (v.d.clip.length - v.playingOn.source.time < 1) {
-                    freeJingleAudio.Add(v.playingOn);
-                    jingles.RemoveAt(i);
-                } else {
-                    i++;
-                }
-            }
-            if (chordInd < prog.Count - 1 && beats - chordStart > prog.chords[chordInd].beats) {
-                chordStart += prog.chords[chordInd].beats;
-                chordInd++;
-            }
-            foreach (var kvp in queuedMelodies) {
-                if (kvp.Value.loopsLeft == 0 && time > kvp.Value.d.beatsIntoLoop / bps + startTime) {
-                    if (freeAudio.Count > 0) {
-                        var a = freeAudio[^1];
-                        freeAudio.RemoveAt(freeAudio.Count - 1);
-                        a.clip = kvp.Value.d.clip;
-                        a.source.PlayScheduled(startTime + kvp.Value.d.beatsIntoLoop / bps + delay);
-                        kvp.Value.playingOn = a;
-                        kvp.Value.loopsLeft = kvp.Value.d.end;
-                        melodies[kvp.Key] = kvp.Value;
-                        for (int i = currLoops.Count; i < kvp.Value.d.overLoop.Count; i++) {
+                if (currentLoop != null) {
+                    // Schedule stuff
+                    if (nextStartTime == -1 && bar == bars.Length - 1) {
+                        // Debug.Log("Scheduling: " + currentLoop.length.ToString());
+                        if (currLoops.Count == 1 && queuedLoops.Count > 0) {
                             currLoops.Add(queuedLoops[0]);
                             queuedLoops.RemoveAt(0);
                         }
-                    } else {
-                        Debug.Log("Failed to play melody due to lack of Audio Sources");
+                        if (currLoops.Count > 1) {
+                            QueueNextLoop(1, currLoops[1]);
+                        } else {
+                            QueueNextLoop(1, null);
+                            currLoops.Add(nextLoop.group);
+                        }
+                        // Debug.Log("Scheduled: " + nextStartTime.ToString());
                     }
-                    remove.Add(kvp.Key);
-                }
-                else if (kvp.Value.loopsLeft < 0) {
-                    remove.Add(kvp.Key);
-                }
-            }
-            foreach (var k in remove) {
-                queuedMelodies.Remove(k);
-            }
-            remove.Clear();
-            for (int i = 0; i < queuedJingles.Count; ) {
-                var v = queuedJingles[i];
-                if (v.barsLeft == 0 && beats - barStart > bars[bar] - v.beats) {
-                    if (freeJingleAudio.Count > 0) {
-                        var a = freeJingleAudio[^1];
-                        freeJingleAudio.RemoveAt(freeJingleAudio.Count - 1);
-                        a.clip = v.d.clip;
-                        a.source.PlayScheduled(startTime + (barStart + bars[bar] - v.beats) / bps + delay);
-                        v.playingOn = a;
-                        v.barsLeft = 0;
-                        jingles.Add(v);
-                    } else {
-                        Debug.Log("Failed to play jingle due to lack of Audio Sources");
-                    }
-                    queuedJingles.RemoveAt(i);
-                } else {
-                    i++;
                 }
             }
 
-            if (currentLoop != null) {
-                // Schedule stuff
-                if (nextStartTime == -1 && bar == bars.Length - 1) {
-                    // Debug.Log("Scheduling: " + currentLoop.length.ToString());
-                    if (currLoops.Count == 1 && queuedLoops.Count > 0) {
-                        currLoops.Add(queuedLoops[0]);
-                        queuedLoops.RemoveAt(0);
-                    }
-                    if (currLoops.Count > 1) {
-                        QueueNextLoop(1, currLoops[1]);
-                    } else {
-                        QueueNextLoop(1, null);
-                        currLoops.Add(nextLoop.group);
-                    }
-                    // Debug.Log("Scheduled: " + nextStartTime.ToString());
-                }
-            }
+            prevTime = time;
         }
+    }
 
-        prevTime = time;
+    public void Reset() {
+        loopAudio.Stop();
+        foreach (var a in melAudio) {
+            a.source.Stop();
+        }
+        foreach (var a in jingleAudio) {
+            a.source.Stop();
+        }
+        melodies.Clear();
+        queuedMelodies.Clear();
+        jingles.Clear();
+        queuedJingles.Clear();
+        playing = false;
+        currentLoop = null;
+        nextLoop = null;
+        queued = 0;
+        started = 0;
+        currLoops.Clear();
+        queuedLoops.Clear();
+        bar = 0;
+        barStart = 0;
+        chordInd = 0;
+        chordStart = 0;
+        startTime = 0;
+        nextStartTime = -1;
+        bps = 0;
+        beats = 0;
+        freeAudio.Clear();
+        freeAudio.AddRange(melAudio);
+        freeJingleAudio.Clear();
+        freeJingleAudio.AddRange(jingleAudio);
+        loopVolume = loopVol;
+        melodyVolume = melVol;
+        jingleVolume = jingleVol;
+    }
+
+    public void StartPlaying() {
+        playing = true;
+    }
+
+    public void ChangeTrack(TrackData d) {
+        Reset();
+        currentTrack = new RuntimeTrackData(d);
+    }
+
+    public void ChangeTrackAndStart(TrackData d) {
+        Reset();
+        currentTrack = new RuntimeTrackData(d);
+        StartPlaying();
     }
 
     void PlayNext() {
