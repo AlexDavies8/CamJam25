@@ -36,7 +36,7 @@ public class SpacePhysics : MonoBehaviour
             var diff = (Vector2)(closestPlanet.transform.position - transform.position);
             velocity += diff.normalized * closestPlanet.gravity / diff.magnitude;
 
-            if (minDist <= 0)
+            if (minDist <= 0 && Vector2.Dot(velocity, diff) >= 0)
             {
                 currentPlanet = closestPlanet;
                 planetPos = Mathf.Atan2(-diff.y, -diff.x) / (Mathf.PI * 2);
@@ -57,11 +57,16 @@ public class SpacePhysics : MonoBehaviour
             var newPos = currentPlanet.SurfacePoint(planetPos) + outDir * surfaceOffset;
             transform.right = -currentPlanet.SurfaceTangent(planetPos);
 
-            var outVel = -Vector2.Dot(newPos - (Vector2)transform.position, outDir) / Time.deltaTime;
+            var outVel = Vector2.Dot(newPos - (Vector2)transform.position, outDir) / Time.deltaTime;
             if (outVel > stickThreshold)
             {
-                velocity = currentPlanet.GetLinearVelocity(planetPos, planetVel) + outVel * outDir;
-                currentPlanet = null;
+                var nextPos = currentPlanet.SurfacePoint(planetPos + planetVel * Time.deltaTime);
+                if (Vector2.Dot(outDir, nextPos - (Vector2)closestPlanet.transform.position) <
+                    Vector2.Dot(outDir, newPos - (Vector2)closestPlanet.transform.position))
+                {
+                    velocity = currentPlanet.GetLinearVelocity(planetPos, planetVel);
+                    currentPlanet = null;
+                }
             }
             
             transform.position = newPos;
