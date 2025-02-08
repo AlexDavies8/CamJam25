@@ -59,13 +59,12 @@ public class Planet : MonoBehaviour
 
     public float SurfaceHeight(float angle)
     {
-        var dist = 0f;
+        var dist = radius;
         foreach (var layer in layers)
         {
             var t = Time.time * layer.frequency + layer.offset + angle * layer.waveCount;
-            dist += Mathf.Sin(t) * layer.amplitude;
+            dist += Mathf.Sin(t) * layer.amplitude * wobbleStrength;
         }
-        
         foreach (var impact in impacts)
         {
             var diff = (impact.angle - angle) % (Mathf.PI * 2f);
@@ -74,8 +73,7 @@ public class Planet : MonoBehaviour
             var influence = Mathf.Max(0, 1 - fracDist * radius) * impact.influence;
             dist -= influence * impact.pos;
         }
-
-        return radius + dist * wobbleStrength;
+        return dist;
     }
 
     public float AngleTo(Vector2 position)
@@ -109,6 +107,6 @@ public class Planet : MonoBehaviour
 
     public Vector2 GetLinearVelocity(float angle, float angular)
     {
-        return SurfaceTangent(angle) * (angular * SurfaceHeight(angle) * Mathf.PI * 2f);
+        return -SurfaceTangent(angle) * (angular * SurfaceHeight(angle));
     }
 }
