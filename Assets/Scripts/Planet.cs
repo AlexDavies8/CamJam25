@@ -21,7 +21,7 @@ public class Planet : MonoBehaviour
 
     public struct Impact
     {
-        public float frac;
+        public float angle;
         public float influence;
         public float vel;
         public float pos;
@@ -57,59 +57,58 @@ public class Planet : MonoBehaviour
         }
     }
 
-    public float SurfaceDistance(float frac)
+    public float SurfaceHeight(float angle)
     {
-        var dist = radius;
+        var dist = 0f;
         foreach (var layer in layers)
         {
-            var t = Time.time * layer.frequency + layer.offset + frac * layer.waveCount;
-            dist += Mathf.Sin(t * Mathf.PI * 2) * layer.amplitude * wobbleStrength;
+            var t = Time.time * layer.frequency + layer.offset + angle * layer.waveCount;
+            dist += Mathf.Sin(t) * layer.amplitude;
         }
+        
         foreach (var impact in impacts)
         {
-            var diff = (impact.frac - frac) % 1;
-            if (diff < 0) diff++;
-            var fracDist = Mathf.Min(diff, 1f - diff);
-            var influence = Mathf.Max(0, 1 - fracDist * radius * 6f) * impact.influence;
+            var diff = (impact.angle - angle) % (Mathf.PI * 2f);
+            if (diff < 0) diff += Mathf.PI * 2f;
+            var fracDist = Mathf.Min(diff, Mathf.PI * 2 - diff);
+            var influence = Mathf.Max(0, 1 - fracDist * radius) * impact.influence;
             dist -= influence * impact.pos;
         }
-        return dist;
+
+        return radius + dist * wobbleStrength;
     }
 
-    public Vector2 SurfaceTangent(float frac)
+    public float AngleTo(Vector2 position)
     {
-        return (SurfacePoint(frac + 0.01f) - SurfacePoint(frac)).normalized;
+        var diff = position - (Vector2)transform.position;
+        return Mathf.Atan2(diff.y, diff.x);
     }
 
-    public Vector2 SurfaceNormal(float frac)
+    public Vector2 SurfacePoint(float angle)
     {
-        return Vector2.Perpendicular((SurfacePoint(frac) - SurfacePoint(frac + 0.01f)).normalized);
+        var length = SurfaceHeight(angle);
+        return (Vector2)transform.position + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * length;
     }
 
-    public float SurfaceDistance(Vector2 from)
+    public Vector2 SurfaceTangent(float angle)
     {
-        from -= (Vector2)transform.position;
-        var frac = Mathf.Atan2(from.y, from.x) / (Mathf.PI * 2);
-        return SurfaceDistance(frac);
+        return (SurfacePoint(angle) - SurfacePoint(angle + 0.01f)).normalized;
     }
 
-    public Vector2 SurfacePoint(float frac)
+    public Vector2 SurfaceNormal(float angle)
     {
-        var dist = SurfaceDistance(frac);
-        return new Vector2(Mathf.Cos(frac * Mathf.PI * 2), Mathf.Sin(frac * Mathf.PI * 2)) * dist + (Vector2)transform.position;
+        return Vector2.Perpendicular(SurfaceTangent(angle));
     }
 
-    public float GetAngularVelocity(Vector2 pos, Vector2 linear)
+    public float GetAngularVelocity(float angle, Vector2 linear)
     {
-        var frac = Mathf.Atan2(pos.y, pos.x) / (Mathf.PI * 2);
-        var tangent = SurfaceTangent(frac);
-        var vel = Vector2.Dot(tangent, linear);
-        return vel / (2f * Mathf.PI * SurfaceDistance(frac));
+        var tangent = SurfaceTangent(angle);
+        var length = Vector2.Dot(tangent, linear);
+        return length / (2f * Mathf.PI * SurfaceHeight(angle));
     }
 
-    public Vector2 GetLinearVelocity(float frac, float angular)
+    public Vector2 GetLinearVelocity(float angle, float angular)
     {
-        var tangent = SurfaceTangent(frac);
-        return angular * tangent * SurfaceDistance(frac) * Mathf.PI * 2f;
+        return SurfaceTangent(angle) * (angular * SurfaceHeight(angle) * Mathf.PI * 2f);
     }
 }

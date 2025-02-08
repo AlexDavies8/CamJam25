@@ -11,37 +11,33 @@ public class PlayerController : MonoBehaviour
     public float acceleration = 2f;
     public float jumpVel = 6f;
 
-    private bool prevOnPlanet = false;
+    private bool prevOnPlanet;
     
     private void FixedUpdate()
     {
-        if (physics.OnPlanet)
+        if (physics.onPlanet)
         {
             var dir = 0;
             if (Input.GetKey(KeyCode.A)) dir--;
             if (Input.GetKey(KeyCode.D)) dir++;
-            var target = dir * speed / (Mathf.PI * 2 * physics.currentPlanet.radius);
+            var target = dir * speed / physics.closestPlanet.radius;
 
             if (Math.Sign(target) != Math.Sign(physics.planetVel) || Math.Abs(target) > Math.Abs(physics.planetVel))
             {
-                physics.planetVel =
-                    Mathf.Lerp(physics.planetVel, target, 1 - Mathf.Exp(-acceleration * Time.deltaTime));
+                physics.planetVel = Mathf.Lerp(physics.planetVel, target, 1 - Mathf.Exp(-acceleration * Time.deltaTime));
             }
             
-            if (!prevOnPlanet)
-            {
-                physics.currentPlanet.impacts.Add(new Planet.Impact { frac = physics.planetPos, influence = 1.4f, vel = 2f, pos = 0.1f });
-            }
+            if (!prevOnPlanet) physics.closestPlanet.impacts.Add(new Planet.Impact { angle = physics.planetPos, influence = 1.4f, vel = 2f, pos = 0.1f });
         }
-        prevOnPlanet = physics.OnPlanet;
+        prevOnPlanet = physics.onPlanet;
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Space) && physics.OnPlanet)
+        if (Input.GetKeyDown(KeyCode.Space) && physics.onPlanet)
         {
-            physics.velocity = physics.currentPlanet.GetLinearVelocity(physics.planetPos, physics.planetVel) + physics.currentPlanet.SurfaceNormal(physics.planetPos) * jumpVel;
-            physics.currentPlanet = null;
+            physics.velocity = physics.closestPlanet.GetLinearVelocity(physics.planetPos, physics.planetVel) + physics.closestPlanet.SurfaceNormal(physics.planetPos) * jumpVel;
+            physics.onPlanet = false;
         }
     }
 }

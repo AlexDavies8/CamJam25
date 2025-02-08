@@ -22,11 +22,10 @@ public class PlanetCollider : MonoBehaviour
         var points = polygonCollider.points;
         for (int i = 0; i < resolution; i++)
         {
-            var frac = (float)i / resolution;
-            var dir = new Vector2(Mathf.Cos(frac * Mathf.PI * 2), Mathf.Sin(frac * Mathf.PI * 2));
-            var dist = planet.SurfaceDistance(frac);
-            var pos = dir * dist;
-            points[i] = pos;
+            var angle = Mathf.PI * 2 * i / resolution;
+            var dir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
+            var length = planet.SurfaceHeight(angle);
+            points[i] = dir * length;
         }
 
         polygonCollider.points = points;

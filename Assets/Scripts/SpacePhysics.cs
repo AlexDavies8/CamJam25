@@ -8,71 +8,75 @@ public class SpacePhysics : MonoBehaviour
     public float surfaceOffset = 0.5f;
     public float friction = 2f;
 
-    public Vector2 velocity = Vector2.right * 5f;
-    public Planet currentPlanet = null;
-    public float planetPos = 0f;
-    public float planetVel = 0f;
+    [HideInInspector] public Vector2 velocity = Vector2.right * 5f;
+    [HideInInspector] public float planetPos = 0f;
+    [HideInInspector] public float planetVel = 0f;
 
-    public Planet closestPlanet;
-    
-    public bool OnPlanet => currentPlanet is not null;
+    [HideInInspector] public Planet closestPlanet;
+
+    [HideInInspector] public bool onPlanet;
     
     private void FixedUpdate()
     {
-        if (currentPlanet is null)
+        if (onPlanet) DoPlanetPhysics();
+        else DoSpacePhysics();
+    }
+
+    private void DoSpacePhysics()
+    {
+        UpdateClosestPlanet();
+
+        // We are using 1/dist gravity instead of 1/dist^2 because it feels nicer
+        var planetCoreDelta = (Vector2)(closestPlanet.transform.position - transform.position);
+        velocity += planetCoreDelta.normalized * closestPlanet.gravity / planetCoreDelta.magnitude;
+
+        transform.position += (Vector3)velocity * Time.deltaTime;
+    }
+
+    private void UpdateClosestPlanet()
+    {
+        float minDist = float.MaxValue;
+        foreach (var planet in Planet.Planets)
         {
-            float minDist = float.MaxValue;
-            foreach (var planet in Planet.Planets)
+            var centreDist = Vector2.Distance(planet.transform.position, transform.position);
+            var height = planet.SurfaceHeight(planet.AngleTo(transform.position));
+            var dist = centreDist - height;
+            if (dist < minDist)
             {
-                var planetDiff = planet.transform.position - transform.position;
-                var dist = planetDiff.magnitude - planet.SurfaceDistance(transform.position) - surfaceOffset;
-                if (dist < minDist)
-                {
-                    minDist = dist;
-                    closestPlanet = planet;
-                }
-            }
-
-            var diff = (Vector2)(closestPlanet.transform.position - transform.position);
-            velocity += diff.normalized * closestPlanet.gravity / diff.magnitude;
-
-            if (minDist <= 0 && Vector2.Dot(velocity, diff) >= 0)
-            {
-                currentPlanet = closestPlanet;
-                planetPos = Mathf.Atan2(-diff.y, -diff.x) / (Mathf.PI * 2);
-                planetVel = currentPlanet.GetAngularVelocity(transform.position, velocity);
-                velocity = Vector2.zero;
-            }
-            else
-            {
-                transform.position += (Vector3)velocity * Time.deltaTime;
+                minDist = dist;
+                closestPlanet = planet;
             }
         }
-        else
-        {
-            if (planetPos > 1) planetPos--;
-            if (planetPos < 0) planetPos++;
-            
-            planetVel = Mathf.Lerp(planetVel, 0f, 1 - Mathf.Exp(-friction * Time.deltaTime));
-            planetPos += planetVel * Time.deltaTime;
-            
-            var outDir = (Vector2)(transform.position - currentPlanet.transform.position).normalized;
-            var newPos = currentPlanet.SurfacePoint(planetPos) + outDir * surfaceOffset;
-            transform.right = -currentPlanet.SurfaceTangent(planetPos);
 
-            var outVel = Vector2.Dot(newPos - (Vector2)transform.position, outDir) / Time.deltaTime;
-            if (outVel > stickThreshold)
-            {
-                var nextPos = currentPlanet.SurfacePoint(planetPos + planetVel * Time.deltaTime);
-                if (Vector2.Dot(outDir, nextPos - (Vector2)closestPlanet.transform.position) <
-                    Vector2.Dot(outDir, newPos - (Vector2)closestPlanet.transform.position))
-                {
-                    velocity = currentPlanet.GetLinearVelocity(planetPos, planetVel);
-                    currentPlanet = null;
-                }
-            }
-            
-            transform.position = newPos;
-        }
+        if (minDist < 0 && Vector2.Dot(velocity, closestPlanet.transform.position - transform.position) >= 0) Land();
+    }
+
+    private void Land()
+    {
+        onPlanet = true;
+
+        planetPos = closestPlanet.AngleTo(transform.position);
+        planetVel = closestPlanet.GetAngularVelocity(planetPos, velocity);
+        velocity = Vector2.zero; // Cut linear velocity since we are on a planet now
+    }
+
+    private void Detach()
+    {
+        onPlanet = false;
+    }
+
+    private void DoPlanetPhysics()
+    {
+        // Keep between 0 and 2 PI
+        if (planetPos < 0) planetPos += Mathf.PI * 2;
+        if (planetPos > Mathf.PI * 2) planetPos -= Mathf.PI * 2;
+
+        planetVel = Mathf.Lerp(planetVel, 0f, 1 - Mathf.Exp(-friction * Time.deltaTime));
+        planetPos += planetVel * Time.deltaTime;
+
+        var normal = closestPlanet.SurfaceNormal(planetPos);
+        var pos = closestPlanet.SurfacePoint(planetPos);
+        transform.position = pos + normal * surfaceOffset;
+        transform.up = normal;
     }
 }
