@@ -8,7 +8,7 @@ public class PitchDetector : MonoBehaviour
 
     private AudioClip clip;
     private int sampleRate = 44100;
-    private int bufferSize = 1024;
+    private int bufferSize = 1024 * 8;
 
     private void Awake()
     {
@@ -26,7 +26,7 @@ public class PitchDetector : MonoBehaviour
             float[] samples = GetSamples();
             if (samples is null) return;
             var freq = FindDominantFrequency(FFT(samples), sampleRate);
-            Debug.Log($"Freq: {Math.Round(freq, 2)} Hz");
+            Debug.Log($"Freq: {Math.Round(freq, 2)} Hz, Note: ${FrequencyToNote(freq)}");
         }
     }
 
@@ -92,5 +92,18 @@ public class PitchDetector : MonoBehaviour
         }
 
         return combined;
+    }
+    
+    static string FrequencyToNote(double frequency)
+    {
+        if (frequency <= 0) return "Unknown";
+
+        int midiNote = (int)Math.Round(69 + 12 * Math.Log2(frequency / 440.0));
+        string[] noteNames = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+    
+        int octave = (midiNote / 12) - 1;
+        string note = noteNames[midiNote % 12];
+
+        return $"{note}{octave}";
     }
 }
