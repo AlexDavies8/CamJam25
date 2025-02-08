@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -71,6 +71,11 @@ public class Planet : MonoBehaviour
     public Vector2 SurfaceTangent(float frac)
     {
         return (SurfacePoint(frac + 0.01f) - SurfacePoint(frac)).normalized;
+    }
+
+    public Vector2 SurfaceNormal(float frac)
+    {
+        return Vector2.Perpendicular((SurfacePoint(frac) - SurfacePoint(frac + 0.01f)).normalized);
     }
 
     public float SurfaceDistance(Vector2 from)
