@@ -27,7 +27,10 @@ public class PlayerController : MonoBehaviour
                 physics.planetVel = Mathf.Lerp(physics.planetVel, target, 1 - Mathf.Exp(-acceleration * Time.deltaTime));
             }
             
-            if (!prevOnPlanet) physics.closestPlanet.impacts.Add(new Planet.Impact { angle = physics.planetPos, influence = 1.4f, vel = 2f, pos = 0.1f });
+            if (!prevOnPlanet)
+            {
+                physics.closestPlanet.impacts.Add(new Planet.Impact { angle = physics.planetPos, influence = 1.4f, vel = 2f, pos = 0.1f });
+            }
         }
         prevOnPlanet = physics.onPlanet;
     }
@@ -36,7 +39,7 @@ public class PlayerController : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Space) && physics.onPlanet)
         {
-            physics.velocity = physics.closestPlanet.GetLinearVelocity(physics.planetPos, physics.planetVel) + physics.closestPlanet.SurfaceNormal(physics.planetPos) * jumpVel;
+            physics.velocity = physics.closestPlanet.GetLinearVelocity(physics.planetPos, physics.planetVel) * 1.5f + physics.closestPlanet.SurfaceNormal(physics.planetPos) * jumpVel;
             physics.onPlanet = false;
         }
     }
