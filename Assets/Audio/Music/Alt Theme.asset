@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db2d6c8c83683484b8a617ad915f4ed2, type: 3}
+  m_Name: Alt Theme
+  m_EditorClassIdentifier: 
+  startGroup: Intro
+  loops:
+  - {fileID: 11400000, guid: 50638995e0b217e48a46be8baa161aa0, type: 2}
+  - {fileID: 11400000, guid: 9e9b252b5e9baa94481e8c089b208cc3, type: 2}
+  melodies:
+  - {fileID: 11400000, guid: ccc30d51e2381304b84b19e1fb1ec27d, type: 2}
+  jingles:
+  - {fileID: 11400000, guid: 2b1c49f0445adaa4a84b62a11660ea41, type: 2}
+  - {fileID: 11400000, guid: 119f55a6b134c57478ba8f02b673822c, type: 2}
+  - {fileID: 11400000, guid: 10038349143b7f04583d1474c895b483, type: 2}
