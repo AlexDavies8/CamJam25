@@ -9,6 +9,7 @@ public class PlayerController : MonoBehaviour
     [Header("Config")]
     public float speed = 2f;
     public float acceleration = 2f;
+    public float jumpVel = 6f;
 
     private bool prevOnPlanet = false;
     
@@ -27,8 +28,20 @@ public class PlayerController : MonoBehaviour
                     Mathf.Lerp(physics.planetVel, target, 1 - Mathf.Exp(-acceleration * Time.deltaTime));
             }
             
-            // if (!prevOnPlanet) physics.currentPlanet.impacts.Add(new Planet.Impact { position = physics.planetPos + 0.5f, strength = 0.00005f });
+            if (!prevOnPlanet)
+            {
+                physics.currentPlanet.impacts.Add(new Planet.Impact { frac = physics.planetPos, influence = 1.4f, vel = 2f, pos = 0.1f });
+            }
         }
         prevOnPlanet = physics.OnPlanet;
+    }
+
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Space) && physics.OnPlanet)
+        {
+            physics.velocity = physics.currentPlanet.GetLinearVelocity(physics.planetPos, physics.planetVel) + physics.currentPlanet.SurfaceNormal(physics.planetPos) * jumpVel;
+            physics.currentPlanet = null;
+        }
     }
 }

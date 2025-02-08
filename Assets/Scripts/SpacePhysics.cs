@@ -8,7 +8,7 @@ public class SpacePhysics : MonoBehaviour
     public float surfaceOffset = 0.5f;
     public float friction = 2f;
 
-    private Vector2 velocity = Vector2.right * 5f;
+    public Vector2 velocity = Vector2.right * 5f;
     public Planet currentPlanet = null;
     public float planetPos = 0f;
     public float planetVel = 0f;
@@ -50,6 +50,9 @@ public class SpacePhysics : MonoBehaviour
         }
         else
         {
+            if (planetPos > 1) planetPos--;
+            if (planetPos < 0) planetPos++;
+            
             planetVel = Mathf.Lerp(planetVel, 0f, 1 - Mathf.Exp(-friction * Time.deltaTime));
             planetPos += planetVel * Time.deltaTime;
             
