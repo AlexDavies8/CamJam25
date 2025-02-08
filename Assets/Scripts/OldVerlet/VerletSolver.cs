@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class VerletSolver : MonoBehaviour
@@ -10,10 +9,10 @@ public class VerletSolver : MonoBehaviour
     public List<SpringConstraint> springConstraints = new();
     public List<ChainConstraint> chainConstraints = new();
     public List<UnityCollisionConstraint> collisionConstraints = new();
-    public Action<List<VerletPoint>, float> customConstraints = null;
+    public Action<List<VerletPoint>, int, float> customConstraints = null;
     public List<VerletPoint> points = new();
 
-    private void CreateFullyLinkedSoftbody(IEnumerable<Vector2> positions, float stiffness = 20f, float damping = 20f)
+    public void CreateFullyLinkedSoftbody(IEnumerable<Vector2> positions, float stiffness = 20f, float damping = 20f)
     {
         var start = points.Count;
         foreach (var pos in positions)
@@ -32,6 +31,12 @@ public class VerletSolver : MonoBehaviour
         }
     }
 
+    public int AddPoint(Vector2 position)
+    {
+        points.Add(new VerletPoint { currPos = position, prevPos = position });
+        return points.Count - 1;
+    }
+
     public void AddUnityCollisionToAll(float radius = 0.1f)
     {
         for (int i = 0; i < points.Count; i++)
@@ -46,11 +51,12 @@ public class VerletSolver : MonoBehaviour
         
         for (int step = 0; step < substeps; step++)
         {
-            customConstraints?.Invoke(points, dt);
+            customConstraints?.Invoke(points, step, dt);
             ApplySpringConstraints();
             ApplyChainConstraints();
             ApplyUnityCollisionConstraints();
             UpdatePositions(dt);
+
         }
     }
 
@@ -71,16 +77,14 @@ public class VerletSolver : MonoBehaviour
             var a = constraint.a;
             var b = constraint.b;
             
-            var diff = points[b].currPos - points[a].currPos;
-            var mag = diff.magnitude;
-            var dir = diff.normalized;
-
-            var relVel = (points[a].currPos - points[a].prevPos) - (points[b].currPos - points[b].prevPos);
-            var dampingForce = Vector2.Dot(relVel, dir) * constraint.damping;
-
-            var forceMag = constraint.stiffness * (mag - constraint.length);
-
-            var force = dir * (forceMag - dampingForce);
+            var force = CalculateSpringForce(
+                points[a].currPos, 
+                points[a].prevPos,
+                points[b].currPos,
+                points[b].prevPos,
+                constraint.length,
+                constraint.stiffness,
+                constraint.damping);
 
             var pointA = points[a];
             pointA.Accelerate(force);
@@ -90,6 +94,20 @@ public class VerletSolver : MonoBehaviour
             pointB.Accelerate(-force);
             points[b] = pointB;
         }
+    }
+
+    public static Vector2 CalculateSpringForce(Vector2 a, Vector2 prevA, Vector2 b, Vector2 prevB, float length, float stiffness, float damping)
+    {
+        var diff = b - a;
+        var mag = diff.magnitude;
+        var dir = diff.normalized;
+
+        var relVel = (a - prevA) - (b - prevB);
+        var dampingForce = Vector2.Dot(relVel, dir) * damping;
+
+        var forceMag = stiffness * (mag - length);
+
+        return dir * (forceMag - dampingForce);
     }
 
     private void ApplyChainConstraints()
@@ -116,20 +134,25 @@ public class VerletSolver : MonoBehaviour
 
     private void ApplyUnityCollisionConstraints()
     {
+        var col = GetComponent<Collider2D>();
+        col.enabled = false;
         foreach (var constraint in collisionConstraints)
         {
             var point = points[constraint.idx];
 
-            var other = Physics2D.OverlapCircle(point.currPos, constraint.radius);
+            var pos = point.currPos + (Vector2)transform.position;
+            var other = Physics2D.OverlapCircle(pos, constraint.radius);
             if (other)
             {
-                var closest = other.ClosestPoint(point.currPos);
-                var diff = closest - point.currPos;
+                var closest = other.ClosestPoint(pos);
+                var diff = closest - pos;
                 point.currPos += diff.normalized * (diff.magnitude - constraint.radius);
+                other.attachedRigidbody.AddForce(-diff.normalized * (diff.magnitude - constraint.radius), ForceMode2D.Impulse);
             }
             
             points[constraint.idx] = point;
         }
+        col.enabled = true;
     }
 
     public struct UnityCollisionConstraint

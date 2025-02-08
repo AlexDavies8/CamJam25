@@ -1,92 +1,15 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.U2D;
 
 public class Planet : MonoBehaviour
 {
-    [Header("Setup")]
-    public StaticSoftbody softbody;
-    public PolygonCollider2D polygonCollider;
-    public SpriteShapeController spriteShape;
-    public LineRenderer lineRenderer;
-
-    [Header("Planet Settings")]
-    public float mouseStrength = 10f;
+    [Header("Config")]
     public float radius = 5f;
-    public float wobbleStrength = 0.1f;
-    public List<NoiseLayer> noiseLayers = new();
-
-    private void Awake()
-    {
-        polygonCollider.points = new Vector2[softbody.pointCount];
-        spriteShape.spline.Clear();
-        for (int i = 0; i < softbody.pointCount; i++)
-        {
-            spriteShape.spline.InsertPointAt(i, i * Vector2.one);
-        }
-        lineRenderer.positionCount = softbody.pointCount;
-    }
-
-    private void FixedUpdate()
-    {
-        var centre = Vector2.zero;
-
-        for (int i = 0; i < softbody.pointCount; i++)
-        {
-            centre += softbody.points[i].Position;
-        }
-
-        centre /= softbody.pointCount;
-        
-        // Update Target Positions
-        for (int i = 0; i < softbody.pointCount; i++)
-        {
-            var point = softbody.points[i];
-            
-            var frac = (float)i / softbody.pointCount;
-            var x = Mathf.Cos(frac * Mathf.PI * 2);
-            var y = Mathf.Sin(frac * Mathf.PI * 2);
-            var dir = new Vector2(x, y);
-            var dist = radius;
-            foreach (var layer in noiseLayers)
-            {
-                var t = Time.time * layer.frequency + layer.offset + frac * layer.waveCount;
-                dist += Mathf.Sin(t * Mathf.PI * 2) * layer.amplitude * wobbleStrength;
-            }
-            point.TargetPosition = centre + dir * dist;
-            
-            softbody.points[i] = point;
-        }
-        
-        // Push Point Positions
-        var newPoints = polygonCollider.points;
-        for (int i = 0; i < softbody.points.Length; i++)
-        {
-            var pos = softbody.points[i].Position;
-            newPoints[i] = pos;
-            spriteShape.spline.SetPosition(i, pos);
-            lineRenderer.SetPosition(i, pos);
-        }
-        polygonCollider.points = newPoints;
-        spriteShape.RefreshSpriteShape();
-
-        if (Input.GetMouseButton(0))
-        {
-            var mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            for (int i = 0; i < softbody.pointCount; i++)
-            {
-                var point = softbody.points[i];
-
-                var diff = point.Position - (Vector2)mousePos;
-                var force = diff.normalized / Mathf.Max(1f, diff.magnitude);
-                point.Position += force * (Time.deltaTime * mouseStrength);
-            
-                softbody.points[i] = point;
-            }
-        }
-    }
-
+    public float wobbleStrength = 0.01f;
+    public float gravity = 5f;
+    public List<NoiseLayer> layers = new();
+    
     [Serializable]
     public struct NoiseLayer
     {
@@ -94,5 +17,98 @@ public class Planet : MonoBehaviour
         public float frequency;
         public float offset;
         public int waveCount;
+    }
+
+    public struct Impact
+    {
+        public float angle;
+        public float influence;
+        public float vel;
+        public float pos;
+    }
+    
+    public static List<Planet> Planets = new();
+
+    public List<Impact> impacts = new();
+
+    private void OnEnable()
+    {
+        Planets.Add(this);
+    }
+
+    private void OnDisable()
+    {
+        Planets.Remove(this);
+    }
+
+    private void Update()
+    {
+        for (int i = 0; i < impacts.Count; i++)
+        {
+            var impact = impacts[i];
+
+            impact.influence -= Time.deltaTime;
+
+            impact.vel -= impact.pos * Time.deltaTime * 20f;
+            impact.pos += impact.vel * Time.deltaTime;
+            
+            if (impact.influence <= 0) impacts.RemoveAt(i);
+            else impacts[i] = impact;
+        }
+    }
+
+    public float SurfaceHeight(float angle)
+    {
+        var dist = 0f;
+        foreach (var layer in layers)
+        {
+            var t = Time.time * layer.frequency + layer.offset + angle * layer.waveCount;
+            dist += Mathf.Sin(t) * layer.amplitude;
+        }
+        
+        foreach (var impact in impacts)
+        {
+            var diff = (impact.angle - angle) % (Mathf.PI * 2f);
+            if (diff < 0) diff += Mathf.PI * 2f;
+            var fracDist = Mathf.Min(diff, Mathf.PI * 2 - diff);
+            var influence = Mathf.Max(0, 1 - fracDist * radius) * impact.influence;
+            dist -= influence * impact.pos;
+        }
+
+        return radius + dist * wobbleStrength;
+    }
+
+    public float AngleTo(Vector2 position)
+    {
+        var diff = position - (Vector2)transform.position;
+        return Mathf.Atan2(diff.y, diff.x);
+    }
+
+    public Vector2 SurfacePoint(float angle)
+    {
+        var length = SurfaceHeight(angle);
+        return (Vector2)transform.position + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * length;
+    }
+
+    public Vector2 SurfaceTangent(float angle)
+    {
+        return (SurfacePoint(angle) - SurfacePoint(angle + 0.01f)).normalized;
+    }
+
+    public Vector2 SurfaceNormal(float angle)
+    {
+        return Vector2.Perpendicular(SurfaceTangent(angle));
+    }
+
+    public float GetAngularVelocity(float angle, Vector2 linear)
+    {
+        var tangent = SurfaceTangent(angle);
+        var length = Vector2.Dot(tangent, linear);
+        return length / (2f * Mathf.PI * SurfaceHeight(angle));
+    }
+
+    public Vector2 GetLinearVelocity(float angle, float angular)
+    {
+        return SurfaceTangent(angle) * (angular * SurfaceHeight(angle) * Mathf.PI * 2f);
     }
 }
