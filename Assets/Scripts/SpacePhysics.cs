@@ -13,6 +13,8 @@ public class SpacePhysics : MonoBehaviour
     public float planetPos = 0f;
     public float planetVel = 0f;
 
+    public Planet closestPlanet;
+    
     public bool OnPlanet => currentPlanet is not null;
     
     private void FixedUpdate()
@@ -20,7 +22,6 @@ public class SpacePhysics : MonoBehaviour
         if (currentPlanet is null)
         {
             float minDist = float.MaxValue;
-            Planet closestPlanet = null;
             foreach (var planet in Planet.Planets)
             {
                 var planetDiff = planet.transform.position - transform.position;
