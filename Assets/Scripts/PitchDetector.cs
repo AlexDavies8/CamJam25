@@ -25,8 +25,16 @@ public class PitchDetector : MonoBehaviour
         {
             float[] samples = GetSamples();
             if (samples is null) return;
-            var freq = FindDominantFrequency(FFT(samples), sampleRate);
-            Debug.Log($"Freq: {Math.Round(freq, 2)} Hz, Note: ${FrequencyToNote(freq)}");
+            var buckets = BucketNotes(FFT(samples), sampleRate);
+
+            var max = 0;
+            for (int i = 0; i < buckets.Length; i++)
+            {
+                if (buckets[i] > buckets[max]) max = i;
+            }
+            
+            string[] noteNames = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+            if (buckets[max] > 500) Debug.Log($"Note: {noteNames[max]}, Magnitude: {buckets[max]}");
         }
     }
 
@@ -40,6 +48,29 @@ public class PitchDetector : MonoBehaviour
         var samples = new float[bufferSize];
         clip.GetData(samples, micPos - bufferSize);
         return samples;
+    }
+
+    private static double[] BucketNotes(Complex[] fft, int sampleRate)
+    {
+        const double A4 = 440.0;
+        
+        var n = fft.Length;
+
+        double[] buckets = new double[12];
+
+        for (int i = 0; i < n / 2; i++)
+        {
+            var freq = i * (sampleRate / (double)n);
+        
+            var semitonesFromA4 = (int)Math.Round(12 * Math.Log(freq / A4, 2));
+        
+            // Double mod to deal with negatives
+            var noteIndex = ((semitonesFromA4 + 9) % 12 + 12) % 12; // +9 to align A4 to index 9
+
+            buckets[noteIndex] += fft[i].Magnitude;
+        }
+
+        return buckets;
     }
 
     private static double FindDominantFrequency(Complex[] fft, int sampleRate)
@@ -98,7 +129,7 @@ public class PitchDetector : MonoBehaviour
     {
         if (frequency <= 0) return "Unknown";
 
-        int midiNote = (int)Math.Round(69 + 12 * Math.Log2(frequency / 440.0));
+        int midiNote = (int)Math.Round(69 + 12 * Math.Log(frequency / 440.0, 2));
         string[] noteNames = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
     
         int octave = (midiNote / 12) - 1;
