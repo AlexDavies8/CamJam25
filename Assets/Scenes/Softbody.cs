@@ -1,6 +1,7 @@
 using UnityEngine;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine.UIElements;
 using Unity.VisualScripting;
 using UnityEditor.U2D.Animation;
@@ -46,6 +47,7 @@ public class Softbody : MonoBehaviour
     public List<Spring> springs = new List<Spring>();
     public List<Vector2> net_force = new List<Vector2>();
     public List<int> points_to_draw = new List<int>();
+    public DeformableSprite fill;
     public void AddPoint(float x, float y, bool anchor)
     {
         points.Add(new Point(new Vector2(x, y), anchor));
@@ -70,7 +72,7 @@ public class Softbody : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-
+        
     }
     
     int Compare(Vector2 a, Vector2 b, Vector2 center)
@@ -116,7 +118,6 @@ public class Softbody : MonoBehaviour
 
         //draw
         LineRenderer l = this.GetComponent<LineRenderer>();
-        SpriteShapeController ssc = this.GetComponent<SpriteShapeController>();
 
         List<int> ord = new List<int>();
         for (int i = 0; i < n; i++)
@@ -140,21 +141,20 @@ public class Softbody : MonoBehaviour
             ord_inv[ord[i]] = i;
         }
 
-        ssc.spline.Clear();
-
         n = points_to_draw.Count;
         int prev = -10000;
         l.positionCount = n + 1;
+        fill.vertices = new Vector2[n].ToList();
         foreach (int i in points_to_draw)
         {
             l.SetPosition(i, points[i].position);
+            fill.vertices[i] = points[i].position;
 
             int distance = ord_inv[i] - prev;
             if (distance < -n / 2)
                 distance = n;
             if (distance > 0)
             {
-                ssc.spline.InsertPointAt(ssc.spline.GetPointCount(), points[i].position);
                 prev = ord_inv[i];
             }
         }
@@ -162,5 +162,10 @@ public class Softbody : MonoBehaviour
         {
             l.SetPosition(n, points[0].position);
         }
+    }
+
+    private void Update()
+    {
+        fill.UpdateMesh();
     }
 }

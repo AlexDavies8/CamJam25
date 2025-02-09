@@ -39,7 +39,7 @@ public class Player : MonoBehaviour
         for (int i = 0; i < vertices; i++)
         {
             float x = (root(Mathf.Cos(dtheta * i), 3)) * radius + player.transform.position.x;
-            float y = (root(Mathf.Sin(dtheta * i), 3) / 1.3f) * radius + player.transform.position.y;
+            float y = (root(Mathf.Sin(dtheta * i), 3)) * radius + player.transform.position.y;
 
             softBody.AddPoint(x, y, false);
             softBody.AddPointToDraw(i);
@@ -65,7 +65,7 @@ public class Player : MonoBehaviour
         {
             for (int j = 0; j < i; j++)
             {
-                softBody.AddSpring(i, j, 2f);
+                softBody.AddSpring(i, j, 4f);
             }
         }
     }
@@ -83,20 +83,20 @@ public class Player : MonoBehaviour
             softBody.points[vertices + 2].position = (Vector2)player.transform.position - dx;
             softBody.points[vertices + 3].position = (Vector2)player.transform.position - dy;
 
-            if (spacePhysics.currentPlanet == null)
+            if (spacePhysics.closestPlanet == null)
             {
                 softBody.Physics();
                 continue;
             }
 
-            Planet cp = spacePhysics.currentPlanet;
+            Planet cp = spacePhysics.closestPlanet;
             Vector2 planetPosition = cp.transform.position;
             for (int i = 0; i < vertices; i++)
             {
                 if (softBody.points[i].anchor)
                     continue;
                 Vector2 pointPosition = softBody.points[i].position;
-                float distance = cp.SurfaceDistance(pointPosition);
+                float distance = cp.SurfaceHeight(cp.AngleTo(pointPosition));
                 Vector2 d = pointPosition - planetPosition;
                 distance = d.magnitude - distance;
                 d = d.normalized;
