@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    public MusicEngine musicEngine;
+
     public static PlayerController Instance;
     
     [Header("Setup")]
@@ -52,6 +54,7 @@ public class PlayerController : MonoBehaviour
         {
             physics.velocity = physics.closestPlanet.GetLinearVelocity(physics.planetPos, physics.planetVel) * 0.5f + physics.closestPlanet.SurfaceNormal(physics.planetPos) * (jumpVel * (2f - 1f / (1 + MathF.Exp(-Mathf.Abs(physics.planetVel)))));
             physics.Detach();
+            musicEngine?.QueueJingle("Jump");
         }
     }
 }

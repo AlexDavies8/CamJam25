@@ -16,6 +16,7 @@ MonoBehaviour:
   bpm: 130
   beatsUntilBar:
   - 3
+  - 6
   barParity: 0
   startChord: 0000000014000000
   endChord: 000000001400000010000000

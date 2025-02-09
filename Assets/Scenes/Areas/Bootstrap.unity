@@ -381,10 +381,10 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
+    x: 0.2916667
+    y: 0.22222222
+    width: 0.4166667
+    height: 0.5555555
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 34
@@ -405,6 +405,17 @@ Camera:
   m_OcclusionCulling: 0
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
+--- !u!114 &935579583 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5741105224804399271, guid: da31272b5af485e429719726cac13f14, type: 3}
+  m_PrefabInstance: {fileID: 1650995915}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 838609bf9f5a66d4ca97503d4ed94154, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1070767990
 GameObject:
   m_ObjectHideFlags: 0
@@ -438,6 +449,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ef38a67ebae99845baf1b99a7643c1a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  musicEngine: {fileID: 935579583}
   physics: {fileID: 1070767993}
   speed: -10
   acceleration: 3
@@ -547,7 +559,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a9a6956e4ac472aa3a2c9228f205d69, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  notePattern: 0b0000000400000003000000
+  notePattern: 09000000080000000900000004000000
   maxError: 1
   bounceInfluence: 3
   bounceWidth: 3
@@ -566,6 +578,75 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c89bcc2803e4ad0448a8eb8e68ce9c1c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1001 &1650995915
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1212653271971714027, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1212653271971714027, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1212653271971714027, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1212653271971714027, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1212653271971714027, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1212653271971714027, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1212653271971714027, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1212653271971714027, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1212653271971714027, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1212653271971714027, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5741105224804399271, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: bannedTags.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5741105224804399271, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: 'bannedTags.Array.data[0]'
+      value: Drums
+      objectReference: {fileID: 0}
+    - target: {fileID: 7349799525550751428, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: m_Name
+      value: Music Engine
+      objectReference: {fileID: 0}
+    - target: {fileID: 7349799525550751428, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: m_TagString
+      value: Music
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: da31272b5af485e429719726cac13f14, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -573,3 +654,4 @@ SceneRoots:
   - {fileID: 34538064}
   - {fileID: 682242589}
   - {fileID: 1070767994}
+  - {fileID: 1650995915}
