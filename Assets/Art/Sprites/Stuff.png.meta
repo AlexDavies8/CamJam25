@@ -717,6 +717,50 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: Stuff_25
+      rect:
+        serializedVersion: 2
+        x: 43
+        y: 120
+        width: 25
+        height: 31
+      alignment: 9
+      pivot: {x: 0.44630414, y: 0.000330925}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c38b6deddcc7e9145b6b336d4c279f15
+      internalID: -728650660
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Stuff_26
+      rect:
+        serializedVersion: 2
+        x: 72
+        y: 120
+        width: 19
+        height: 31
+      alignment: 9
+      pivot: {x: 0.51491547, y: 0.03761973}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e66010fa6b59e4f4e82561b507b15467
+      internalID: -1960209370
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     customData: 
     physicsShape: []
@@ -749,6 +793,8 @@ TextureImporter:
       Stuff_22: -1537355661
       Stuff_23: -854570824
       Stuff_24: -1945199424
+      Stuff_25: -728650660
+      Stuff_26: -1960209370
       Stuff_3: -6234350319375162970
       Stuff_4: -7476468578618564806
       Stuff_5: -2637056189634824953
