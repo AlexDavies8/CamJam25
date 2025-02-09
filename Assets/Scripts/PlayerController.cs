@@ -17,17 +17,25 @@ public class PlayerController : MonoBehaviour
 
     private bool prevOnPlanet;
 
+    private int startWait = 10;
+
     private void Awake()
     {
-        if (Instance)
-        {
+        if (Instance) {
             Destroy(this);
+        } else {
+            Instance = this;
         }
-        else Instance = this;
     }
 
     private void FixedUpdate()
     {
+        if (startWait > 0) {
+            startWait--;
+            if (startWait == 0) {
+                musicEngine.TryQueueMelody("ThemeFull", 2, "Piano");
+            }
+        }
         if (physics.onPlanet)
         {
             var dir = 0;

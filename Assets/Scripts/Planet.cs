@@ -33,6 +33,12 @@ public class Planet : MonoBehaviour
 
     public List<Impact> impacts = new();
 
+    public TriggerMelody music;
+
+    private void Start() {
+        music = GetComponent<TriggerMelody>();
+    }
+
     private void OnEnable()
     {
         Planets.Add(this);
