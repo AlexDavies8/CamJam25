@@ -11,6 +11,7 @@ public class ForestJingle : MonoBehaviour
 
     public List<int> jingle = new();
     public int maxError = 2;
+    public float dist = 5f;
     
     MusicEngine musicEngine;
     
@@ -28,7 +29,7 @@ public class ForestJingle : MonoBehaviour
             foreach (var obj in found)
             {
                 var rend = obj.GetComponent<SpriteRenderer>();
-                if (rend)
+                if (rend && Vector2.Distance(rend.transform.position, player.transform.position) < dist)
                 {
                     var idx = from.IndexOf(rend.sprite);
                     if (idx >= 0) rend.sprite = to[idx];
