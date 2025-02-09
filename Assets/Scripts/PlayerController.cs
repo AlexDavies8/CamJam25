@@ -17,7 +17,7 @@ public class PlayerController : MonoBehaviour
 
     private bool prevOnPlanet;
 
-    private int startWait = 10;
+    private int startWait = 100;
 
     private void Awake()
     {

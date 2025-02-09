@@ -418,6 +418,7 @@ public class MusicEngine : MonoBehaviour {
                             freeJingleAudio.RemoveAt(freeJingleAudio.Count - 1);
                             a.clip = v.d.clip;
                             a.source.PlayScheduled(startTime + (barStart + prog[bar].beats - v.beats) / bps + delay);
+                            a.volume = jingleVol * v.d.volume;
                             v.playingOn = a;
                             v.barsLeft = 0;
                             jingles.Add(v);
@@ -533,7 +534,7 @@ public class MusicEngine : MonoBehaviour {
     }
 
     public string GetLoop(int i) {
-        Debug.Log("i: " + i.ToString() + " currLoops.Count " + currLoops.Count.ToString());
+        // Debug.Log("i: " + i.ToString() + " currLoops.Count " + currLoops.Count.ToString());
         if (i < currLoops.Count) {
             return currLoops[i];
         }
@@ -544,11 +545,11 @@ public class MusicEngine : MonoBehaviour {
     }
 
     public Chord? GetChordAtNextBar() {
-        Debug.Log("Getting next bar length from bar " + bar.ToString() + " against bars " + prog.Length.ToString());
+        // Debug.Log("Getting next bar length from bar " + bar.ToString() + " against bars " + prog.Length.ToString());
         if (bar < prog.Length - 1) {
             return prog[bar + 1].chord;
         }
-        Debug.Log("Checking next loop bars");
+        // Debug.Log("Checking next loop bars");
         if (nextLoop is not null) {
             return nextLoop.chordBars[0].chord;
         }
@@ -556,7 +557,7 @@ public class MusicEngine : MonoBehaviour {
     }
 
     public Chord? GetChordAtNextNextBar() {
-        Debug.Log("Getting next bar length from bar " + bar.ToString() + " against bars " + prog.Length.ToString());
+        // Debug.Log("Getting next bar length from bar " + bar.ToString() + " against bars " + prog.Length.ToString());
         if (bar < prog.Length - 2) {
             return prog[bar + 2].chord;
         }
@@ -570,11 +571,11 @@ public class MusicEngine : MonoBehaviour {
     }
 
     public double? GetNextBarLength() {
-        Debug.Log("Getting next bar length from bar " + bar.ToString() + " against bars " + prog.Length.ToString());
+        // Debug.Log("Getting next bar length from bar " + bar.ToString() + " against bars " + prog.Length.ToString());
         if (bar < prog.Length - 1) {
             return prog[bar + 1].beats;
         }
-        Debug.Log("Checking next loop bars");
+        // Debug.Log("Checking next loop bars");
         if (nextLoop is not null) {
             return nextLoop.chordBars[0].beats;
         }
@@ -590,14 +591,14 @@ public class MusicEngine : MonoBehaviour {
     }
 
     public bool CheckQueue(List<string> test, int startLoop) {
-        Debug.Log("Checking queue " + startLoop.ToString());
+        // Debug.Log("Checking queue " + startLoop.ToString());
         if (loopCount == 0) {
             return false;
         }
         for (int i = 0; i + startLoop < loopCount && i < test.Count; ++i) {
             string group = GetLoop(i + startLoop);
-            Debug.Log(group is null);
-            Debug.Log("Checking " + test[i] + " against " + group);
+            // Debug.Log(group is null);
+            // Debug.Log("Checking " + test[i] + " against " + group);
             if (test[i] != group) {
                 return false;
             }
@@ -614,7 +615,7 @@ public class MusicEngine : MonoBehaviour {
             foreach (var loop in candidates) {
                 float groupWeight = 0;
                 if (staled.TryGetValue(loop.group, out var count)) {
-                    Debug.Log("Staling " + loop.group + " by -" + stalerFactor(count).ToString());
+                    // Debug.Log("Staling " + loop.group + " by -" + stalerFactor(count).ToString());
                     groupWeight -= stalerFactor(count);
                 }
                 float w = getWeighting(loop, groupWeight, null);
@@ -624,10 +625,10 @@ public class MusicEngine : MonoBehaviour {
             float choice = UnityEngine.Random.Range(0, totalWeight);
             int maxChoice = 0;
             float maxp = 0;
-            Debug.Log(choice.ToString() + " chosen from " + totalWeight);
+            // Debug.Log(choice.ToString() + " chosen from " + totalWeight);
             for (int i = 0; i < weights.Count; i++) {
                 choice -= weights[i];
-                Debug.Log("Weight " + i.ToString() + " = " + weights[i].ToString() + " choice = " + choice.ToString());
+                // Debug.Log("Weight " + i.ToString() + " = " + weights[i].ToString() + " choice = " + choice.ToString());
                 if (weights[i] > maxp) {
                     maxChoice = i;
                     maxp = weights[i];
@@ -671,7 +672,7 @@ public class MusicEngine : MonoBehaviour {
             foreach (var loop in candidates) {
                 float groupWeight = 0;
                 if (staled.TryGetValue(loop.group, out var count)) {
-                    Debug.Log("Staling " + loop.group + " by -" + stalerFactor(count).ToString());
+                    // Debug.Log("Staling " + loop.group + " by -" + stalerFactor(count).ToString());
                     groupWeight -= stalerFactor(count);
                 }
                 if (currentLoop.nextGroups.ContainsKey(loop.group)) {
@@ -684,10 +685,10 @@ public class MusicEngine : MonoBehaviour {
             float choice = UnityEngine.Random.Range(0, totalWeight);
             int maxChoice = 0;
             float maxp = 0;
-            Debug.Log(choice.ToString() + " chosen from " + totalWeight);
+            // Debug.Log(choice.ToString() + " chosen from " + totalWeight);
             for (int i = 0; i < weights.Count; i++) {
                 choice -= weights[i];
-                Debug.Log("Weight " + i.ToString() + " = " + weights[i].ToString() + " choice = " + choice.ToString());
+                // Debug.Log("Weight " + i.ToString() + " = " + weights[i].ToString() + " choice = " + choice.ToString());
                 if (weights[i] > maxp) {
                     maxChoice = i;
                     maxp = weights[i];
@@ -717,14 +718,14 @@ public class MusicEngine : MonoBehaviour {
         foreach (var tag in requiredTags) {
             if (loop.tags.Contains(tag)) {
                 totalWeight += tagDelta;
-                Debug.Log("Required tag " + tag);
+                // Debug.Log("Required tag " + tag);
                 break;
             }
         }
         foreach (var tag in bannedTags) {
             if (loop.tags.Contains(tag)) {
                 totalWeight -= tagDelta;
-                Debug.Log("Banned tag " + tag);
+                // Debug.Log("Banned tag " + tag);
                 break;
             }
         }
@@ -825,7 +826,7 @@ public class MusicEngine : MonoBehaviour {
             }
         }
 
-        Debug.Log("Found " + (candidates.Count).ToString() + " candidates");
+        // Debug.Log("Found " + (candidates.Count).ToString() + " candidates");
         if (candidates.Count == 0) {
             return false;
         }
@@ -882,8 +883,14 @@ public class MusicEngine : MonoBehaviour {
         var finalCand = new List<RuntimeJingle>();
         double minTime = 10000;
         var nextChord = GetChordAtNextBar();
-        Debug.Log("Queueing Jingle at beat " + beats.ToString() + " with chord " + chord.ToString() + " and next chord " + nextChord.Value.ToString());
+        // Debug.Log("Queueing Jingle at beat " + beats.ToString() + " with chord " + chord.ToString() + " and next chord " + nextChord.Value.ToString());
         foreach (var cand in candidates) {
+            if (cand.freeStart && (chord == Chord.Any || cand.startChord.Contains(Chord.Any) || cand.startChord.Contains(chord))) {
+                finalCand.Clear();
+                finalCand.Add(new RuntimeJingle(cand, 0, startTime, 0 + MusicEngine.delay));
+                minTime = 0;
+                continue;
+            }
             foreach (var startTime in cand.beatsUntilBar) {
                 double timeUntil = prog[bar].beats - startTime;
                 if (timeUntil > beats - barStart && bps < cand.bpm / 60 + 0.01 && bps > cand.bpm / 60 - 0.01 &&
@@ -891,22 +898,22 @@ public class MusicEngine : MonoBehaviour {
                     timeUntil <= minTime + 0.01 &&
                     (nextChord is null || nextChord == Chord.Any || cand.endChord.Contains(Chord.Any) || cand.endChord.Contains(nextChord.Value))) {
                     if (timeUntil >= minTime - 0.01) {
-                        finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                        finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps + MusicEngine.delay));
                     } else {
                         finalCand.Clear();
-                        finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                        finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps + MusicEngine.delay));
                         minTime = timeUntil;
                     }
                 }
             }
         }
         if (finalCand.Count == 0) {
-            Debug.Log("Failed to find candidates for this bar, looking at next bar.");
+            // Debug.Log("Failed to find candidates for this bar, looking at next bar.");
             double? nextBarLength = GetNextBarLength();
             var nextNextChord = GetChordAtNextNextBar();
             minTime = 10000;
             if (nextBarLength is not null) {
-                Debug.Log("Queueing Jingle at beat " + beats.ToString() + " with next chord " + nextChord.Value.ToString() + " and next next chord " + nextNextChord.ToString());
+                // Debug.Log("Queueing Jingle at beat " + beats.ToString() + " with next chord " + nextChord.Value.ToString() + " and next next chord " + nextNextChord.ToString());
                 foreach (var cand in candidates) {
                     foreach (var startTime in cand.beatsUntilBar) {
                         var timeUntil = nextBarLength.Value - startTime;
@@ -915,31 +922,31 @@ public class MusicEngine : MonoBehaviour {
                             timeUntil <= minTime + 0.01 &&
                             (nextNextChord is null || nextNextChord.Value == Chord.Any || cand.endChord.Contains(Chord.Any) || cand.endChord.Contains(nextNextChord.Value))) {
                             if (timeUntil >= minTime - 0.01) {
-                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps + MusicEngine.delay));
                             } else {
                                 finalCand.Clear();
-                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps + MusicEngine.delay));
                                 minTime = timeUntil;
                             }
                         }
                     }
                 }
             } else {
-                Debug.Log("Next bar length is null, failed to check next bar.");
+                // Debug.Log("Next bar length is null, failed to check next bar.");
             }
         }
         if (finalCand.Count == 0) {
-            Debug.Log("Failed to find candidates for next bar, choosing randomly.");
+            // Debug.Log("Failed to find candidates for next bar, choosing randomly.");
             foreach (var cand in candidates) {
                 foreach (var startTime in cand.beatsUntilBar) {
                     double timeUntil = prog[bar].beats - startTime;
                     if (timeUntil > beats - barStart && bps < cand.bpm / 60 + 0.01 && bps > cand.bpm / 60 - 0.01 &&
                         timeUntil <= minTime + 0.01) {
                         if (timeUntil >= minTime - 0.01) {
-                            finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                            finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps + MusicEngine.delay));
                         } else {
                             finalCand.Clear();
-                            finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                            finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps + MusicEngine.delay));
                             minTime = timeUntil;
                         }
                     }
@@ -947,7 +954,7 @@ public class MusicEngine : MonoBehaviour {
             }
         }
         if (finalCand.Count == 0) {
-            Debug.Log("Failed to find candidates for this bar, looking at next bar.");
+            // Debug.Log("Failed to find candidates for this bar, looking at next bar.");
             double? nextBarLength = GetNextBarLength();
             minTime = 10000;
             if (nextBarLength is not null) {
@@ -957,22 +964,22 @@ public class MusicEngine : MonoBehaviour {
                         if (timeUntil >= -0.05 && bps < cand.bpm / 60 + 0.01 && bps > cand.bpm / 60 - 0.01 &&
                             timeUntil <= minTime + 0.01) {
                             if (timeUntil >= minTime - 0.01) {
-                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps + MusicEngine.delay));
                             } else {
                                 finalCand.Clear();
-                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps + MusicEngine.delay));
                                 minTime = timeUntil;
                             }
                         }
                     }
                 }
             } else {
-                Debug.Log("Next bar length is null, failed to check next bar.");
+                // Debug.Log("Next bar length is null, failed to check next bar.");
             }
         }
         var choice = finalCand[UnityEngine.Random.Range(0, finalCand.Count)];
         queuedJingles.Add(choice);
-        Debug.Log("Queued jingle to play in " + choice.realTimeStart.ToString());
+        // Debug.Log("Queued jingle to play in " + choice.realTimeStart.ToString());
         return (float)choice.realTimeStart;
     }
 }

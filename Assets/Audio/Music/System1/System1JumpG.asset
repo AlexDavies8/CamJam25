@@ -31,3 +31,6 @@ MonoBehaviour:
   startChord: 14000000
   endChord: 18000000
   jingleName: Jump
+  timeOffset: 0
+  freeStart: 1
+  volume: 0.5
