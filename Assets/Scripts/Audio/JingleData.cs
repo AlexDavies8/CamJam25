@@ -19,4 +19,5 @@ public class JingleData : ScriptableObject {
     public List<Chord> startChord;    // The starting chord the jingle expects to be on
     public List<Chord> endChord;      // The ending chord the jingle expects
     public string jingleName;   // The name of the jingle (used for triggering)
+    public double timeOffset;
 }
