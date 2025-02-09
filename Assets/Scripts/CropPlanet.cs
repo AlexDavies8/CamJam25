@@ -8,6 +8,11 @@ public class CropPlanet : MonoBehaviour
     [Min(1)]
     public int maximumSpawnAmount = 5;
 
+    private readonly List<GameObject> crops = new();
+    private readonly List<float> cropsLifeLeft = new();
+
+    private const float CROP_LIFE_LENGTH = 20f;
+
     public void SpawnCrops(float angle)
     {
         var cropAmount = Random.Range(1, maximumSpawnAmount);
@@ -18,6 +23,24 @@ public class CropPlanet : MonoBehaviour
             var crop = Instantiate(prefab, decor.transform);
 
             crop.GetComponent<StickToPlanet>().stickPosition = (angle + Random.Range(-2, 2) / GetComponent<Planet>().radius) / (2 * Mathf.PI);
+
+            crops.Add(crop);
+            cropsLifeLeft.Add(CROP_LIFE_LENGTH);
+        }
+    }
+
+    private void Update()
+    {
+        for (var i = crops.Count - 1; i >= 0; i--)
+        {
+            cropsLifeLeft[i] -= Time.deltaTime;
+
+            if (cropsLifeLeft[i] <= 0) {
+                Destroy(crops[i]);
+
+                crops.RemoveAt(i);
+                cropsLifeLeft.RemoveAt(i);
+            }
         }
     }
 }
