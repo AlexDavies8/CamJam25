@@ -39,7 +39,7 @@ public class SpacePhysics : MonoBehaviour
 
         // We are using 1/dist gravity instead of 1/dist^2 because it feels nicer
         var planetCoreDelta = (Vector2)(closestPlanet.transform.position - transform.position);
-        velocity += planetCoreDelta.normalized * closestPlanet.gravity / planetCoreDelta.magnitude;
+        velocity += planetCoreDelta.normalized * closestPlanet.gravity / Mathf.Max(1f, planetCoreDelta.magnitude);
         velocity = Vector2.Lerp(velocity, Vector2.zero, 1f - Mathf.Exp(-airResistance * Time.deltaTime));
         
         velocity = Vector2.ClampMagnitude(velocity, maximumSpeed);

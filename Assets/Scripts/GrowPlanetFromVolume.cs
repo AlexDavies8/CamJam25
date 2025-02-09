@@ -10,17 +10,15 @@ public class GrowPlanetFromVolume : MonoBehaviour
     public float damping = 5f;
     
     public Planet planet;
-    public PitchDetector pitchDetector;
 
     private void Awake()
     {
         if (!planet) planet = GetComponent<Planet>();
-        if (!pitchDetector) pitchDetector = FindAnyObjectByType<PitchDetector>();
     }
 
     private void Update()
     {
-        var t = Mathf.InverseLerp(remapFromMin, remapFromMax, pitchDetector.volume);
+        var t = Mathf.InverseLerp(remapFromMin, remapFromMax, PitchDetector.Instance.volume);
         var target = Mathf.Lerp(remapToMin, remapToMax, t);
         planet.radius = Mathf.Lerp(planet.radius, target, 1f - Mathf.Exp(-damping * Time.deltaTime));
     }

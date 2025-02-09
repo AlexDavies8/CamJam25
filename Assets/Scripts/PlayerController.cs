@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    public static PlayerController Instance;
+    
     [Header("Setup")]
     public SpacePhysics physics;
     
@@ -12,7 +14,16 @@ public class PlayerController : MonoBehaviour
     public float jumpVel = 6f;
 
     private bool prevOnPlanet;
-    
+
+    private void Awake()
+    {
+        if (Instance)
+        {
+            Destroy(this);
+        }
+        else Instance = this;
+    }
+
     private void FixedUpdate()
     {
         if (physics.onPlanet)
@@ -29,7 +40,7 @@ public class PlayerController : MonoBehaviour
             
             if (!prevOnPlanet)
             {
-                physics.closestPlanet.impacts.Add(new Planet.Impact { angle = physics.planetPos, influence = 1.4f, vel = 2f, pos = 0.1f });
+                physics.closestPlanet.impacts.Add(new Planet.Impact { angle = physics.planetPos, influence = 1.4f, vel = 2f, pos = 0.1f, bandwidth = 1f });
             }
         }
         prevOnPlanet = physics.onPlanet;
