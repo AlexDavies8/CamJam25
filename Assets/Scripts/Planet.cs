@@ -70,10 +70,16 @@ public class Planet : MonoBehaviour
             var diff = (impact.angle - angle) % (Mathf.PI * 2f);
             if (diff < 0) diff += Mathf.PI * 2f;
             var fracDist = Mathf.Min(diff, Mathf.PI * 2 - diff);
-            var influence = Mathf.Max(0, 1 - fracDist * radius) * impact.influence;
+            var influence = Bump(fracDist * radius) * impact.influence;
             dist -= influence * impact.pos;
         }
         return dist;
+    }
+
+    private static float Bump(float x)
+    {
+        if (x >= 1) return 0;
+        return Mathf.Exp(1f / (x * x - 1f));
     }
 
     public float AngleTo(Vector2 position)

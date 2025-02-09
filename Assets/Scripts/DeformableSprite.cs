@@ -7,6 +7,8 @@ public class DeformableSprite : MonoBehaviour
 {
     public Sprite sprite;
     public Color color = Color.white;
+    public int sortingOrder = 0;
+    public string sortingLayerName = "Default";
 
     public List<Vector2> vertices = new();
     
@@ -73,6 +75,9 @@ public class DeformableSprite : MonoBehaviour
         if (sprite) mpb.SetTexture("_MainTex", sprite.texture);
         mpb.SetColor("_RendererColor", color);
         meshRenderer.SetPropertyBlock(mpb);
+
+        meshRenderer.sortingOrder = sortingOrder;
+        meshRenderer.sortingLayerName = sortingLayerName;
     }
 }
 
