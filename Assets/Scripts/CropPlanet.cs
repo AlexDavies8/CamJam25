@@ -1,8 +1,9 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class CropPlanet : MonoBehaviour
 {
-    public GameObject cropPrefab;
+    public List<GameObject> cropPrefabs;
     public GameObject decor;
     [Min(1)]
     public int maximumSpawnAmount = 5;
@@ -13,7 +14,8 @@ public class CropPlanet : MonoBehaviour
 
         for (var i = 0; i < cropAmount; i++)
         {
-            var crop = Instantiate(cropPrefab, decor.transform);
+            var prefab = cropPrefabs[Random.Range(0, cropPrefabs.Count)];
+            var crop = Instantiate(prefab, decor.transform);
 
             crop.GetComponent<StickToPlanet>().stickPosition = (angle + Random.Range(-2, 2) / GetComponent<Planet>().radius) / (2 * Mathf.PI);
         }
