@@ -9,6 +9,8 @@ public class Player : MonoBehaviour
     public Softbody softBody;
     public SpacePhysics spacePhysics;
     public GameObject player;
+    public GameObject leftEye;
+    public GameObject rightEye;
     [Tooltip("number of vertices")]
     public int vertices;
 
@@ -75,7 +77,7 @@ public class Player : MonoBehaviour
     {
         for (int _ = 0; _ < 16; _++)
         {
-            float theta = player.transform.rotation.z * Mathf.PI;
+            float theta = player.transform.rotation.eulerAngles.z * Mathf.Deg2Rad;
             Vector2 dx = new Vector2(anchorOffset * Mathf.Cos(theta), anchorOffset * Mathf.Sin(theta));
             Vector2 dy = new Vector2(-anchorOffset * Mathf.Sin(theta), anchorOffset * Mathf.Cos(theta));
             softBody.points[vertices].position = (Vector2)player.transform.position + dx;
@@ -108,6 +110,12 @@ public class Player : MonoBehaviour
             }
             softBody.Physics();
         }
+
+        leftEye.transform.position = softBody.points[vertices].position;
+        leftEye.transform.rotation = player.transform.rotation;
+
+        rightEye.transform.position = softBody.points[vertices + 2].position;
+        rightEye.transform.rotation = player.transform.rotation;
     }
 
     public void ApplyForce(Vector2 force)
