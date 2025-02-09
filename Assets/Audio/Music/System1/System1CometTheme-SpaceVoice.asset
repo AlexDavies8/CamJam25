@@ -10,19 +10,18 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ecbffb4e2af0eee4892d8269b715c4df, type: 3}
-  m_Name: System1Theme-Piano
+  m_Name: System1CometTheme-SpaceVoice
   m_EditorClassIdentifier: 
-  clip: {fileID: 8300000, guid: 3dc1f93f180dda543aaf8b1152950389, type: 3}
+  clip: {fileID: 8300000, guid: 34d6ca1bc60f07548b1720e559ab4830, type: 3}
   beatsIntoLoop: 0
   overLoop:
   - A
-  - A
   - B
   - A
-  end: 4
-  instrument: Piano
-  melName: ThemeFull
+  end: 1
+  instrument: SpaceVoice
+  melName: Theme
   randomCall: 0
   follows: []
   noFollowW: 0
-  beatsToKill: 0
+  beatsToKill: 1

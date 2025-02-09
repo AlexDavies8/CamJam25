@@ -2728,6 +2728,14 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5741105224804399271, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: melVol
+      value: 0.7
+      objectReference: {fileID: 0}
+    - target: {fileID: 5741105224804399271, guid: da31272b5af485e429719726cac13f14, type: 3}
+      propertyPath: loopVol
+      value: 0.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 5741105224804399271, guid: da31272b5af485e429719726cac13f14, type: 3}
       propertyPath: tagDelta
       value: 5
       objectReference: {fileID: 0}
