@@ -25,8 +25,5 @@ MonoBehaviour:
     instrument: Piano
     startGroup: B
     weight: 1
-  - name: Theme2
-    instrument: Piano
-    startGroup: B
-    weight: 0.5
-  noFollowW: 0
+  noFollowW: -100
+  beatsToKill: 1

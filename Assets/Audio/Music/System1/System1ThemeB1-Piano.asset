@@ -16,13 +16,10 @@ MonoBehaviour:
   beatsIntoLoop: 0
   overLoop:
   - B
-  end: 1
+  - A
+  end: 2
   instrument: Piano
   melName: Theme
   randomCall: 0
-  follows:
-  - name: Theme2
-    instrument: Piano
-    startGroup: B
-    weight: 1
+  follows: []
   noFollowW: 0

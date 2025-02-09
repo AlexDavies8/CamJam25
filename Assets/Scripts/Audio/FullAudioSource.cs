@@ -70,13 +70,13 @@ public class FullAudioSource : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        source = gameObject.GetComponent<AudioSource>();
-        reverb = gameObject.GetComponent<AudioReverbFilter>();
-        highpass = gameObject.GetComponent<AudioHighPassFilter>();
-        lowpass = gameObject.GetComponent<AudioLowPassFilter>();
-        distortion = gameObject.GetComponent<AudioDistortionFilter>();
-        chorus = gameObject.GetComponent<AudioChorusFilter>();
-        echo = gameObject.GetComponent<AudioEchoFilter>();
+        source ??= gameObject.GetComponent<AudioSource>();
+        reverb ??= gameObject.GetComponent<AudioReverbFilter>();
+        highpass ??= gameObject.GetComponent<AudioHighPassFilter>();
+        lowpass ??= gameObject.GetComponent<AudioLowPassFilter>();
+        distortion ??= gameObject.GetComponent<AudioDistortionFilter>();
+        chorus ??= gameObject.GetComponent<AudioChorusFilter>();
+        echo ??= gameObject.GetComponent<AudioEchoFilter>();
     }
 
     // Update is called once per frame

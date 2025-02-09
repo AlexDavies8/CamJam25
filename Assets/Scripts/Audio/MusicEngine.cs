@@ -154,14 +154,15 @@ public class MusicEngine : MonoBehaviour {
     public int queued;          // If something has been queued next. Priority system
     public RuntimeLoop nextLoop;
 
-    public Dictionary<string, RuntimeMelody> melodies;          // Current melodies playing, by instrument
-    public Dictionary<string, RuntimeMelody> queuedMelodies;    // Next melodies playing, by instrument
+    public Dictionary<string, RuntimeMelody> melodies = new();          // Current melodies playing, by instrument
+    public Dictionary<string, RuntimeMelody> queuedMelodies = new();    // Next melodies playing, by instrument
+    private List<RuntimeMelody> removingMelodies = new();
 
-    public List<RuntimeJingle> jingles;                    // Current jingles playing / queued
-    public List<RuntimeJingle> queuedJingles;
+    public List<RuntimeJingle> jingles = new();                    // Current jingles playing / queued
+    public List<RuntimeJingle> queuedJingles = new();
 
-    public List<string> currLoops;                  // Next loops that must play for the currently playing melodies
-    public List<string> queuedLoops;                // Next loops that must play for the queued melodies
+    public List<string> currLoops = new();                  // Next loops that must play for the currently playing melodies
+    public List<string> queuedLoops = new();                // Next loops that must play for the queued melodies
     public int loopCount => currLoops.Count + queuedLoops.Count;
 
     public bool playing = true;
@@ -220,10 +221,6 @@ public class MusicEngine : MonoBehaviour {
 
     // Start is called before the first frame update
     void Start() {
-        melodies = new();
-        queuedMelodies = new();
-        jingles = new();
-        queuedJingles = new();
         started = 0;
         queued = 0;
         currentTrack = new RuntimeTrackData(trackData);
@@ -301,9 +298,14 @@ public class MusicEngine : MonoBehaviour {
                         kvp.Value.loopsLeft--;
                         if (kvp.Value.loopsLeft == 0) {
                             remove.Add(kvp.Key);
-                            freeAudio.Add(kvp.Value.playingOn);
+                            removingMelodies.Add(kvp.Value);
                         } else if (kvp.Value.loopsLeft == 1) {
                             ScheduleFollow(kvp.Value);
+                        } else if (kvp.Value.loopsLeft < 0) {
+                            remove.Add(kvp.Key);
+                            if (kvp.Value.playingOn is not null) {
+                                freeAudio.Add(kvp.Value.playingOn);
+                            }
                         }
                     }
                     foreach (var k in remove) {
@@ -321,6 +323,15 @@ public class MusicEngine : MonoBehaviour {
                     bar++;
                     foreach (var v in queuedJingles) {
                         v.barsLeft--;
+                    }
+                    for (int i = 0; i < removingMelodies.Count; ) {
+                        var v = removingMelodies[i];
+                        if (v.d.beatsToKill < beats) {
+                            freeAudio.Add(v.playingOn);
+                            removingMelodies.RemoveAt(i);
+                        } else {
+                            ++i;
+                        }
                     }
                 }
                 for (int i = 0; i < jingles.Count;) {
@@ -755,12 +766,12 @@ public class MusicEngine : MonoBehaviour {
             w -= staleCost / cand.r.d.overLoop.Count;
             totalStaling += staleCost / cand.r.d.overLoop.Count;
             w = Mathf.Exp(w);
-            weights.Add(w);
             if (nextWeights is not null) {
                 if (nextWeights.TryGetValue((cand.r.d.melName, cand.r.d.instrument, cand.r.d.overLoop[0]), out var v)) {
                     w += v;
                 }
             }
+            weights.Add(w);
             totalWeight += w;
         }
         if (nextWeights is not null) {

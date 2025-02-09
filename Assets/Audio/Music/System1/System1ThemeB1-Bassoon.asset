@@ -16,7 +16,10 @@ MonoBehaviour:
   beatsIntoLoop: 0
   overLoop:
   - B
+  - A
   end: 1
   instrument: Bassoon
   melName: Theme
   randomCall: 0
+  follows: []
+  noFollowW: 0

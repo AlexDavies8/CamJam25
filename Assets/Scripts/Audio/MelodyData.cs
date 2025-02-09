@@ -29,4 +29,5 @@ public class MelodyData : ScriptableObject {
     public double randomCall;           // If the melody can be randomly triggered
     public List<MelodyFollow> follows;  // 
     public float noFollowW;
+    public int beatsToKill;
 }

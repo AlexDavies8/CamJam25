@@ -24,13 +24,10 @@ MonoBehaviour:
   - name: Theme2
     instrument: Piano
     startGroup: A
-    weight: 1
+    weight: 3
   - name: Theme
     instrument: Piano
     startGroup: B
-    weight: 0.5
-  - name: Theme2
-    instrument: Piano
-    startGroup: B
     weight: 1
-  noFollowW: 0
+  noFollowW: -100
+  beatsToKill: 1
