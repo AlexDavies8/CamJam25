@@ -18,10 +18,10 @@ MonoBehaviour:
   - A
   - B
   - A
-  end: 1
+  end: 2
   instrument: SpaceVoice
   melName: Theme
   randomCall: 0
   follows: []
   noFollowW: 0
-  beatsToKill: 1
+  beatsToKill: 6

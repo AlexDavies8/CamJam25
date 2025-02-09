@@ -63,10 +63,10 @@ public class SpacePhysics : MonoBehaviour
             }
         }
 
+        if (closestPlanet.music is not null) {
+            closestPlanet.music.enabled = true;
+        }
         if (prevClosestPlanet != closestPlanet) {
-            if (closestPlanet.music is not null) {
-                closestPlanet.music.enabled = true;
-            }
             if (prevClosestPlanet.music is not null) {
                 prevClosestPlanet.music.enabled = false;
             }
