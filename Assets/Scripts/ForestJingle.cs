@@ -11,7 +11,15 @@ public class ForestJingle : MonoBehaviour
 
     public List<int> jingle = new();
     public int maxError = 2;
-
+    
+    MusicEngine musicEngine;
+    
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        musicEngine = GameObject.FindGameObjectsWithTag("Music")[0].GetComponent<MusicEngine>();
+    }
+    
     public void FixedUpdate()
     {
         if (PitchDetector.Instance.RecognisePattern(jingle, maxError))
@@ -26,6 +34,7 @@ public class ForestJingle : MonoBehaviour
                     if (idx >= 0) rend.sprite = to[idx];
                 }
             }
+            musicEngine.QueueJingle("Tree");
         }
     }
 }
