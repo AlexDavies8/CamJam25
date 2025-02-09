@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using UnityEngine;
 
 public class PitchDetector : MonoBehaviour
 {
+    public static PitchDetector Instance;
+    
     public string device;
 
     public float startThreshold = 300f;
@@ -33,6 +36,13 @@ public class PitchDetector : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance)
+        {
+            Destroy(this);
+            return;
+        }
+        else Instance = this;
+        
         if (Microphone.devices.Length > 0)
         {
             device = Microphone.devices[0];
@@ -84,29 +94,141 @@ public class PitchDetector : MonoBehaviour
                 else currentNote = note;
             }
 
-            for (int i = 0; i < recentNotes.Count; i++)
+            for (int i = 0; i < recentNotes.Count; i++) // Clean up old notes
             {
                 if (Time.time - recentNotes[i].end < historyLength) break;
                 recentNotes.RemoveAt(0);
             }
+        }
+    }
 
-            int[] targets = new[] { 0, 5, 4, 2, 4, 0 };
-            int errors = 0;
-            int idx = 0;
-            for (int i = 0; i < recentNotes.Count; i++)
+    public bool RecognisePattern(List<int> notes, int maxDistance)
+    {
+        if (recentNotes.Count < notes.Count) return false;
+        var match = FuzzySubarrayMatch(recentNotes.Select(note => note.note).ToList(), notes, maxDistance);
+        if (match.start < 0) return false;
+        recentNotes.RemoveRange(0, match.start + match.length); // Consume everything older than matched notes (and the matched ones)
+        return true;
+    }
+    
+    // From ChatGPT
+    private static (int start, int length, int distance) FuzzySubarrayMatch(List<int> text, List<int> pattern, int maxDistance)
+    {
+        const int InsertionDeletionCost = 2; // cost for an extra/missing number
+        const int OffByOneCost = 1;          // cost if a number is off by one
+        const int ExactMatchCost = 0;
+        const int MismatchCost = int.MaxValue / 2;
+        
+        int n = text.Count;
+        int m = pattern.Count;
+        // We'll build a DP matrix where dp[i,j] is the cost to match pattern[0..i-1] with text[0..j-1]
+        int[,] dp = new int[m + 1, n + 1];
+
+        // When pattern is empty, cost is 0 regardless of j (we allow matching at any point)
+        for (int j = 0; j <= n; j++)
+        {
+            dp[0, j] = 0;
+        }
+        // When text is empty but pattern is not, we have to “delete” all items from the pattern.
+        for (int i = 1; i <= m; i++)
+        {
+            dp[i, 0] = i * InsertionDeletionCost;
+        }
+
+        // To keep track of the best match (if any)
+        int bestDistance = int.MaxValue;
+        int bestEndIndex = -1;
+
+        // Fill the DP table column by column (i.e. as we slide the pattern along the text)
+        for (int j = 1; j <= n; j++)
+        {
+            for (int i = 1; i <= m; i++)
             {
-                if (idx >= targets.Length) break;
-                if (recentNotes[i].note == targets[idx])
+                int costSubstitution;
+                if (pattern[i - 1] == text[j - 1])
                 {
-                    idx++;
-                } else if (idx > 0) errors++;
+                    costSubstitution = ExactMatchCost;
+                }
+                else if (Math.Abs(pattern[i - 1] - text[j - 1]) == 1)
+                {
+                    costSubstitution = OffByOneCost;
+                }
+                else
+                {
+                    // Here you can choose how to handle numbers that are not equal and not off by one.
+                    // For our purposes we set the cost so high that such a substitution would be rejected.
+                    costSubstitution = MismatchCost;
+                }
+
+                dp[i, j] = Math.Min(
+                    dp[i - 1, j - 1] + costSubstitution,                        // substitution (or match)
+                    Math.Min(
+                        dp[i - 1, j] + InsertionDeletionCost,                   // deletion in text (or insertion in pattern)
+                        dp[i, j - 1] + InsertionDeletionCost                    // insertion in text (extra number)
+                    )
+                );
             }
-            if (idx >= targets.Length && errors <= 1)
+
+            // When we have processed text[0..j-1], check if matching the entire pattern (i.e. dp[m,j])
+            // gives a distance that is acceptable.
+            if (dp[m, j] <= maxDistance && dp[m, j] < bestDistance)
             {
-                Debug.Log("MAGIC!!!");
-                recentNotes.Clear();
+                bestDistance = dp[m, j];
+                bestEndIndex = j; // pattern match ends at text index j-1.
             }
         }
+
+        if (bestEndIndex == -1)
+        {
+            // No acceptable match was found.
+            return (-1, 0, int.MaxValue);
+        }
+
+        // Backtrack to find the starting index of the matching segment.
+        // We start at (i = m, j = bestEndIndex) and work backwards.
+        int iIndex = m;
+        int jIndex = bestEndIndex;
+        while (iIndex > 0 && jIndex > 0)
+        {
+            // Check if the current cell came from a diagonal (substitution or match)
+            int currentCost = dp[iIndex, jIndex];
+            int costSubst;
+            if (pattern[iIndex - 1] == text[jIndex - 1])
+            {
+                costSubst = ExactMatchCost;
+            }
+            else if (Math.Abs(pattern[iIndex - 1] - text[jIndex - 1]) == 1)
+            {
+                costSubst = OffByOneCost;
+            }
+            else
+            {
+                costSubst = MismatchCost;
+            }
+
+            if (currentCost == dp[iIndex - 1, jIndex - 1] + costSubst)
+            {
+                iIndex--;
+                jIndex--;
+            }
+            else if (currentCost == dp[iIndex, jIndex - 1] + InsertionDeletionCost)
+            {
+                // Came from an insertion (extra item in text)
+                jIndex--;
+            }
+            else if (currentCost == dp[iIndex - 1, jIndex] + InsertionDeletionCost)
+            {
+                // Came from a deletion (a missing item in text)
+                iIndex--;
+            }
+            else
+            {
+                break;
+            }
+        }
+        int startIndex = jIndex;
+        int length = bestEndIndex - startIndex;
+        return (startIndex, length, bestDistance);
     }
 
     private float[] GetSamples()
