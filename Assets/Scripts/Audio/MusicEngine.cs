@@ -89,12 +89,14 @@ public class RuntimeJingle {
     public int barsLeft;
     public double beats;    // Beats until the next bar
     public FullAudioSource playingOn;
+    public double realTimeStart;
 
-    public RuntimeJingle(JingleData d, int barsLeft, double beats) {
+    public RuntimeJingle(JingleData d, int barsLeft, double beats, double realTimeStart) {
         this.d = d;
         this.barsLeft = barsLeft;
         this.beats = beats;
         this.playingOn = null;
+        this.realTimeStart = realTimeStart;
     }
 }
 
@@ -837,9 +839,13 @@ public class MusicEngine : MonoBehaviour {
     }
 
     public void QueueJingle(string name) {
+        QueueJingleTime(name);
+    }
+
+    public float QueueJingleTime(string name) {
         if (!currentTrack.jingles.ContainsKey(name)) {
             Debug.Log("Attempted to queue a unvailable jingle " + name);
-            return;
+            return 0;
         }
         var candidates = currentTrack.jingles[name];
         var finalCand = new List<RuntimeJingle>();
@@ -854,10 +860,10 @@ public class MusicEngine : MonoBehaviour {
                     timeUntil <= minTime + 0.01 &&
                     (nextChord is null || nextChord == Chord.Any || cand.endChord.Contains(Chord.Any) || cand.endChord.Contains(nextChord.Value))) {
                     if (timeUntil >= minTime - 0.01) {
-                        finalCand.Add(new RuntimeJingle(cand, 0, startTime));
+                        finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps));
                     } else {
                         finalCand.Clear();
-                        finalCand.Add(new RuntimeJingle(cand, 0, startTime));
+                        finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps));
                         minTime = timeUntil;
                     }
                 }
@@ -878,10 +884,10 @@ public class MusicEngine : MonoBehaviour {
                             timeUntil <= minTime + 0.01 &&
                             (nextNextChord is null || nextNextChord.Value == Chord.Any || cand.endChord.Contains(Chord.Any) || cand.endChord.Contains(nextNextChord.Value))) {
                             if (timeUntil >= minTime - 0.01) {
-                                finalCand.Add(new RuntimeJingle(cand, 1, startTime));
+                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps));
                             } else {
                                 finalCand.Clear();
-                                finalCand.Add(new RuntimeJingle(cand, 1, startTime));
+                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps));
                                 minTime = timeUntil;
                             }
                         }
@@ -899,10 +905,10 @@ public class MusicEngine : MonoBehaviour {
                     if (timeUntil > beats - barStart && bps < cand.bpm / 60 + 0.01 && bps > cand.bpm / 60 - 0.01 &&
                         timeUntil <= minTime + 0.01) {
                         if (timeUntil >= minTime - 0.01) {
-                            finalCand.Add(new RuntimeJingle(cand, 0, startTime));
+                            finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps));
                         } else {
                             finalCand.Clear();
-                            finalCand.Add(new RuntimeJingle(cand, 0, startTime));
+                            finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps));
                             minTime = timeUntil;
                         }
                     }
@@ -920,10 +926,10 @@ public class MusicEngine : MonoBehaviour {
                         if (timeUntil >= -0.05 && bps < cand.bpm / 60 + 0.01 && bps > cand.bpm / 60 - 0.01 &&
                             timeUntil <= minTime + 0.01) {
                             if (timeUntil >= minTime - 0.01) {
-                                finalCand.Add(new RuntimeJingle(cand, 1, startTime));
+                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps));
                             } else {
                                 finalCand.Clear();
-                                finalCand.Add(new RuntimeJingle(cand, 1, startTime));
+                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps));
                                 minTime = timeUntil;
                             }
                         }
@@ -935,5 +941,7 @@ public class MusicEngine : MonoBehaviour {
         }
         var choice = finalCand[UnityEngine.Random.Range(0, finalCand.Count)];
         queuedJingles.Add(choice);
+        Debug.Log("Queued jingle to play in " + choice.realTimeStart.ToString());
+        return (float)choice.realTimeStart;
     }
 }
