@@ -13,23 +13,47 @@ public class DialogueActor : MonoBehaviour
     private AudioSource audio;
 
     private float talkTimeRemaining;
-    private bool talking;
+    private bool talking = false;
+    private bool preparing = false;
+
+    [SerializeField]
+    private string dialogueJingle;
+
+    MusicEngine musicEngine;
+
+    private float timeToStart = 0;
+    [SerializeField]
+    private float dialoguePreAppear;
 
     private void Awake()
     {
         audio = GetComponent<AudioSource>();
+        musicEngine = GameObject.FindGameObjectsWithTag("Music")[0].GetComponent<MusicEngine>();
     }
 
-    private void FixedUpdate()
+    private void FixedUpdate() 
     {
-        talkTimeRemaining -= Time.deltaTime;
-        if (talking && talkTimeRemaining <= 0) EndDialog();
-        if (!talking && Vector2.Distance(transform.position, PlayerController.Instance.transform.position) < talkDistance) StartDialog();
+        if (preparing) {
+            timeToStart -= Time.deltaTime;
+            if (timeToStart - dialoguePreAppear <= 0) {
+                talking = true;
+                dialogueBox.gameObject.SetActive(true);
+            }
+            if (timeToStart <= 0) {
+                dialogueBox.gameObject.SetActive(true);
+                preparing = false;
+            }
+        }
+        if (talking) {
+            talkTimeRemaining -= Time.deltaTime;
+            if (talkTimeRemaining <= 0) EndDialog();
+        }
+        if (!talking && !preparing && Vector2.Distance(transform.position, PlayerController.Instance.transform.position) < talkDistance) StartDialog();
     }
 
     private void LateUpdate()
     {
-        if (talking)
+        if (dialogueBox.enabled)
         {
             dialogueBox.transform.up = Vector2.up;
             var delta = dialogueBox.transform.position - transform.position;
@@ -43,9 +67,9 @@ public class DialogueActor : MonoBehaviour
     private void StartDialog()
     {
         talkTimeRemaining = talkLength;
-        audio.Play();
-        talking = true;
-        dialogueBox.gameObject.SetActive(true);
+        timeToStart = musicEngine.QueueJingleTime(dialogueJingle);
+        preparing = true;
+        // audio.Play();
     }
 
     private void EndDialog()

@@ -49,6 +49,7 @@ public class SpacePhysics : MonoBehaviour
 
     private void UpdateClosestPlanet()
     {
+        var prevClosestPlanet = closestPlanet;
         float minDist = float.MaxValue;
         foreach (var planet in Planet.Planets)
         {
@@ -62,6 +63,14 @@ public class SpacePhysics : MonoBehaviour
             }
         }
 
+        if (closestPlanet.music is not null) {
+            closestPlanet.music.enabled = true;
+        }
+        if (prevClosestPlanet != closestPlanet) {
+            if (prevClosestPlanet.music is not null) {
+                prevClosestPlanet.music.enabled = false;
+            }
+        }
         if (minDist < 0 && Vector2.Dot(velocity, closestPlanet.transform.position - transform.position) >= 0) Land();
     }
 

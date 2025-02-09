@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    public MusicEngine musicEngine;
+
     public static PlayerController Instance;
     
     [Header("Setup")]
@@ -15,17 +17,25 @@ public class PlayerController : MonoBehaviour
 
     private bool prevOnPlanet;
 
+    private int startWait = 10;
+
     private void Awake()
     {
-        if (Instance)
-        {
+        if (Instance) {
             Destroy(this);
+        } else {
+            Instance = this;
         }
-        else Instance = this;
     }
 
     private void FixedUpdate()
     {
+        if (startWait > 0) {
+            startWait--;
+            if (startWait == 0) {
+                musicEngine.TryQueueMelody("ThemeFull", 2, "Piano");
+            }
+        }
         if (physics.onPlanet)
         {
             var dir = 0;
@@ -52,6 +62,7 @@ public class PlayerController : MonoBehaviour
         {
             physics.velocity = physics.closestPlanet.GetLinearVelocity(physics.planetPos, physics.planetVel) * 0.5f + physics.closestPlanet.SurfaceNormal(physics.planetPos) * (jumpVel * (2f - 1f / (1 + MathF.Exp(-Mathf.Abs(physics.planetVel)))));
             physics.Detach();
+            musicEngine?.QueueJingle("Jump");
         }
     }
 }

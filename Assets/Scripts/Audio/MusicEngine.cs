@@ -608,9 +608,40 @@ public class MusicEngine : MonoBehaviour {
     public void QueueNextGroup(int priority, string group) {
         if (queued < priority) {
             List<RuntimeLoop> candidates = currentTrack.loopTable[group];
-            nextLoop = candidates[UnityEngine.Random.Range(0, candidates.Count)];
-            queued = priority;
+            List<float> weights = new List<float>();
+            float totalWeight = 0;
+            var staled = staleCounts();
+            foreach (var loop in candidates) {
+                float groupWeight = 0;
+                if (staled.TryGetValue(loop.group, out var count)) {
+                    Debug.Log("Staling " + loop.group + " by -" + stalerFactor(count).ToString());
+                    groupWeight -= stalerFactor(count);
+                }
+                float w = getWeighting(loop, groupWeight, null);
+                weights.Add(w);
+                totalWeight += w;
+            }
+            float choice = UnityEngine.Random.Range(0, totalWeight);
+            int maxChoice = 0;
+            float maxp = 0;
+            Debug.Log(choice.ToString() + " chosen from " + totalWeight);
+            for (int i = 0; i < weights.Count; i++) {
+                choice -= weights[i];
+                Debug.Log("Weight " + i.ToString() + " = " + weights[i].ToString() + " choice = " + choice.ToString());
+                if (weights[i] > maxp) {
+                    maxChoice = i;
+                    maxp = weights[i];
+                }
+                if (choice <= 0.01) {
+                    nextLoop = candidates[i];
+                    nextStartTime = startTime + (currentLoop?.length ?? 0);
+                    queued = priority;
+                    return;
+                }
+            }
+            nextLoop = candidates[maxChoice];
             nextStartTime = startTime + (currentLoop?.length ?? 0);
+            queued = priority;
         }
     }
 
