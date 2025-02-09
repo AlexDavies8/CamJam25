@@ -12,6 +12,8 @@ public class VerletSolver : MonoBehaviour
     public Action<List<VerletPoint>, int, float> customConstraints = null;
     public List<VerletPoint> points = new();
 
+    private Collider2D coll;
+
     public void CreateFullyLinkedSoftbody(IEnumerable<Vector2> positions, float stiffness = 20f, float damping = 20f)
     {
         var start = points.Count;
@@ -43,6 +45,8 @@ public class VerletSolver : MonoBehaviour
         {
             collisionConstraints.Add(new UnityCollisionConstraint { idx = i, radius = radius });
         }
+
+        coll = GetComponent<Collider2D>();
     }
 
     private void FixedUpdate()
@@ -134,8 +138,7 @@ public class VerletSolver : MonoBehaviour
 
     private void ApplyUnityCollisionConstraints()
     {
-        var col = GetComponent<Collider2D>();
-        col.enabled = false;
+        if (coll) coll.enabled = false;
         foreach (var constraint in collisionConstraints)
         {
             var point = points[constraint.idx];
@@ -147,12 +150,12 @@ public class VerletSolver : MonoBehaviour
                 var closest = other.ClosestPoint(pos);
                 var diff = closest - pos;
                 point.currPos += diff.normalized * (diff.magnitude - constraint.radius);
-                other.attachedRigidbody.AddForce(-diff.normalized * (diff.magnitude - constraint.radius), ForceMode2D.Impulse);
+                if (other.attachedRigidbody) other.attachedRigidbody.AddForce(-diff.normalized * (diff.magnitude - constraint.radius), ForceMode2D.Impulse);
             }
             
             points[constraint.idx] = point;
         }
-        col.enabled = true;
+        if (coll) coll.enabled = true;
     }
 
     public struct UnityCollisionConstraint
