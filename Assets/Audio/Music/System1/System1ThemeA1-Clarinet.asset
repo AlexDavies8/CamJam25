@@ -25,7 +25,7 @@ MonoBehaviour:
     instrument: Bassoon
     startGroup: B
     weight: 0.2
-  - name: Theme
+  - name: Theme2
     instrument: Bassoon
     startGroup: A
     weight: 0.2

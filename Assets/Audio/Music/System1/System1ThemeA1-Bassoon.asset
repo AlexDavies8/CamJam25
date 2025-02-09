@@ -18,7 +18,7 @@ MonoBehaviour:
   - A
   end: 1
   instrument: Bassoon
-  melName: Theme
+  melName: Theme2
   randomCall: 0
   follows:
   - name: Theme2
