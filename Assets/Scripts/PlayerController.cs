@@ -39,8 +39,8 @@ public class PlayerController : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Space) && physics.onPlanet)
         {
-            physics.velocity = physics.closestPlanet.GetLinearVelocity(physics.planetPos, physics.planetVel) * 1.5f + physics.closestPlanet.SurfaceNormal(physics.planetPos) * jumpVel;
-            physics.onPlanet = false;
+            physics.velocity = physics.closestPlanet.GetLinearVelocity(physics.planetPos, physics.planetVel) * 0.5f + physics.closestPlanet.SurfaceNormal(physics.planetPos) * (jumpVel * (2f - 1f / (1 + MathF.Exp(-Mathf.Abs(physics.planetVel)))));
+            physics.Detach();
         }
     }
 }
