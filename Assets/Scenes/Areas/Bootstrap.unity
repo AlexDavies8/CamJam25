@@ -560,7 +560,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   notePattern: 09000000080000000900000004000000
-  maxError: 1
+  maxError: 2
   bounceInfluence: 3
   bounceWidth: 3
   bounceVelocity: 6
