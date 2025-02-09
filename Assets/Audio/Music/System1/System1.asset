@@ -30,6 +30,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: eeedf2a01883c9645b4d489e5e8fab7f, type: 2}
   - {fileID: 11400000, guid: f3bb570d8e931004895c26804aedd827, type: 2}
   - {fileID: 11400000, guid: 190041a10421c5341857a642d641c0ef, type: 2}
+  - {fileID: 11400000, guid: ce0fe78e31714674394d36a0504f16f7, type: 2}
   jingles:
   - {fileID: 11400000, guid: a78ad56cc414d634c963be885ec96cf0, type: 2}
   - {fileID: 11400000, guid: d55b7b268a44519438c6abc412441127, type: 2}
