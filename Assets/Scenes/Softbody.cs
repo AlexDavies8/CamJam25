@@ -1,11 +1,6 @@
 using UnityEngine;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine.UIElements;
-using Unity.VisualScripting;
-using UnityEditor.U2D.Animation;
-using UnityEngine.U2D;
 
 public class Spring
 {
