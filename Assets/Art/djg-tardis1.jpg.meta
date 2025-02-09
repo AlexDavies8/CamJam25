@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      djg-tardis1_0: 5696947563240048848
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
