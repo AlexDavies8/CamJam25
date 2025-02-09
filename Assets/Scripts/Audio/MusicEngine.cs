@@ -1,12 +1,14 @@
 using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using Unity.IO.LowLevel.Unsafe;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.XR;
+using static UnityEditor.Progress;
 
 public class ListDictionary<Key, E> : Dictionary<Key, List<E>> {
     public void AddEl(Key k, E e) {
@@ -35,7 +37,7 @@ public class DictListDictionary<Key1, Key2, E> : Dictionary<Key1, Dictionary<Key
 public class RuntimeTrackData {
     public string startGroup;
     public Dictionary<string, double> beatsTable;
-    public Dictionary<string, ChordProgression> chordsTable;
+    public Dictionary<string, ChordTerm[]> chordsTable;
     public Dictionary<string, double> bpsTable;
     public ListDictionary<string, RuntimeLoop> loopTable;
     public DictListDictionary<string, string, MelodyData> melodies;
@@ -54,7 +56,7 @@ public class RuntimeTrackData {
             loopTable.AddEl(loop.group, l);
             if (!beatsTable.ContainsKey(l.group)) {
                 beatsTable[l.group] = l.beats;
-                chordsTable[l.group] = l.chordProgression;
+                chordsTable[l.group] = l.chordBars;
                 bpsTable[l.group] = l.bps;
             }
         }
@@ -87,12 +89,14 @@ public class RuntimeJingle {
     public int barsLeft;
     public double beats;    // Beats until the next bar
     public FullAudioSource playingOn;
+    public double realTimeStart;
 
-    public RuntimeJingle(JingleData d, int barsLeft, double beats) {
+    public RuntimeJingle(JingleData d, int barsLeft, double beats, double realTimeStart) {
         this.d = d;
         this.barsLeft = barsLeft;
         this.beats = beats;
         this.playingOn = null;
+        this.realTimeStart = realTimeStart;
     }
 }
 
@@ -138,13 +142,12 @@ public class MusicEngine : MonoBehaviour {
 
     public TrackData trackData;
     public RuntimeTrackData currentTrack;
-    public double[] bars;
     public int bar;
     public double barStart;
 
-    public ChordProgression prog;
+    public ChordTerm[] prog;
     public int chordInd;
-    public Chord chord => prog.chords[chordInd].chord;
+    public Chord chord => prog[chordInd].chord;
     public double chordStart;
 
     public string currentGroup => currentLoop?.group;
@@ -153,17 +156,37 @@ public class MusicEngine : MonoBehaviour {
     public int queued;          // If something has been queued next. Priority system
     public RuntimeLoop nextLoop;
 
-    public Dictionary<string, RuntimeMelody> melodies;          // Current melodies playing, by instrument
-    public Dictionary<string, RuntimeMelody> queuedMelodies;    // Next melodies playing, by instrument
+    public Dictionary<string, RuntimeMelody> melodies = new();          // Current melodies playing, by instrument
+    public Dictionary<string, RuntimeMelody> queuedMelodies = new();    // Next melodies playing, by instrument
+    private List<RuntimeMelody> removingMelodies = new();
 
-    public List<RuntimeJingle> jingles;                    // Current jingles playing / queued
-    public List<RuntimeJingle> queuedJingles;
+    public List<RuntimeJingle> jingles = new();                    // Current jingles playing / queued
+    public List<RuntimeJingle> queuedJingles = new();
 
-    public List<string> currLoops;                  // Next loops that must play for the currently playing melodies
-    public List<string> queuedLoops;                // Next loops that must play for the queued melodies
+    public List<string> currLoops = new();                  // Next loops that must play for the currently playing melodies
+    public List<string> queuedLoops = new();                // Next loops that must play for the queued melodies
     public int loopCount => currLoops.Count + queuedLoops.Count;
 
     public bool playing = true;
+
+    public Queue<string> staleGroups = new();
+    public int stalerMemory = 10;
+    public Func<float, float> stalerFactor = (float x) => (Mathf.Exp(x / 10) - 1) + (x > 3 ? 0.5f : 0) + (x > 6 ? 1f : 0) + (x > 7 ? 2f : 0);
+    public float stalerAlpha = 0.7f;
+
+    public List<string> requiredTags = new();
+    public List<string> bannedTags = new();
+    public float tagDelta = 5;
+
+    public Dictionary<string, float> staleCounts() {
+        var r = new Dictionary<string, float>();
+        var alpha = Mathf.Pow(stalerAlpha, stalerMemory);
+        foreach (var v in staleGroups) {
+            if (r.TryGetValue(v, out var t)) { r[v] += alpha; alpha /= stalerAlpha; }
+            else { r[v] = alpha; alpha /= stalerAlpha; }
+        }
+        return r;
+    }
 
     public AudioPair loopAudio;
     [SerializeField]
@@ -204,10 +227,6 @@ public class MusicEngine : MonoBehaviour {
 
     // Start is called before the first frame update
     void Start() {
-        melodies = new();
-        queuedMelodies = new();
-        jingles = new();
-        queuedJingles = new();
         started = 0;
         queued = 0;
         currentTrack = new RuntimeTrackData(trackData);
@@ -266,18 +285,33 @@ public class MusicEngine : MonoBehaviour {
                     // Increment current loop
                     PlayNext();
                     currLoops.RemoveAt(0);
+                    
+                    if (staleGroups.Count == stalerMemory) {
+                        staleGroups.Dequeue();
+                    }
+                    staleGroups.Enqueue(currentGroup);
+
                     bps = currentLoop.bps;
-                    bars = currentLoop.bars;
                     bar = 0;
                     barStart = 0;
-                    prog = currentLoop.chordProgression;
+                    prog = currentLoop.chordBars;
                     chordInd = 0;
                     chordStart = 0;
+                    foreach (var v in queuedJingles) {
+                        v.barsLeft--;
+                    }
                     foreach (var kvp in melodies) {
                         kvp.Value.loopsLeft--;
                         if (kvp.Value.loopsLeft == 0) {
                             remove.Add(kvp.Key);
-                            freeAudio.Add(kvp.Value.playingOn);
+                            removingMelodies.Add(kvp.Value);
+                        } else if (kvp.Value.loopsLeft == 1) {
+                            ScheduleFollow(kvp.Value);
+                        } else if (kvp.Value.loopsLeft < 0) {
+                            remove.Add(kvp.Key);
+                            if (kvp.Value.playingOn is not null) {
+                                freeAudio.Add(kvp.Value.playingOn);
+                            }
                         }
                     }
                     foreach (var k in remove) {
@@ -290,11 +324,44 @@ public class MusicEngine : MonoBehaviour {
                 }
 
                 beats = (time - startTime) * bps;
-                if (bar < bars.Length - 1 && beats - barStart > bars[bar]) {
-                    barStart += bars[bar];
+                if (bar < prog.Length - 1 && beats - barStart > prog[bar].beats) {
+                    barStart += prog[bar].beats;
                     bar++;
                     foreach (var v in queuedJingles) {
                         v.barsLeft--;
+                    }
+                    for (int i = 0; i < removingMelodies.Count; ) {
+                        var v = removingMelodies[i];
+                        if (v.d.beatsToKill < beats) {
+                            freeAudio.Add(v.playingOn);
+                            removingMelodies.RemoveAt(i);
+                        } else {
+                            ++i;
+                        }
+                    }
+
+                    if (currentLoop != null) {
+                        // Schedule stuff
+                        if (nextStartTime == -1 && bar >= prog.Length - 1) {
+                            // Debug.Log("Scheduling: " + currentLoop.length.ToString());
+                            if (currLoops.Count == 1 && queuedLoops.Count > 0) {
+                                currLoops.Add(queuedLoops[0]);
+                                queuedLoops.RemoveAt(0);
+                            }
+                            if (currLoops.Count == 2 && queuedLoops.Count > 0) {
+                                currLoops.Add(queuedLoops[0]);
+                                queuedLoops.RemoveAt(0);
+                            }
+                            if (currLoops.Count > 2) {
+                                QueueNextLoop(1, currLoops[1], currLoops[2]);
+                            } else if (currLoops.Count > 1) {
+                                QueueNextLoop(1, currLoops[1], null);
+                            } else {
+                                QueueNextLoop(1, null, null);
+                                currLoops.Add(nextLoop.group);
+                            }
+                            // Debug.Log("Scheduled: " + nextStartTime.ToString());
+                        }
                     }
                 }
                 for (int i = 0; i < jingles.Count;) {
@@ -306,10 +373,11 @@ public class MusicEngine : MonoBehaviour {
                         i++;
                     }
                 }
-                if (chordInd < prog.Count - 1 && beats - chordStart > prog.chords[chordInd].beats) {
-                    chordStart += prog.chords[chordInd].beats;
+                if (chordInd < prog.Length - 1 && beats - chordStart > prog[chordInd].beats) {
+                    chordStart += prog[chordInd].beats;
                     chordInd++;
                 }
+                var scheduleFollow = new List<RuntimeMelody>();
                 foreach (var kvp in queuedMelodies) {
                     if (kvp.Value.loopsLeft == 0 && time > kvp.Value.d.beatsIntoLoop / bps + startTime) {
                         if (freeAudio.Count > 0) {
@@ -319,6 +387,9 @@ public class MusicEngine : MonoBehaviour {
                             a.source.PlayScheduled(startTime + kvp.Value.d.beatsIntoLoop / bps + delay);
                             kvp.Value.playingOn = a;
                             kvp.Value.loopsLeft = kvp.Value.d.end;
+                            if (kvp.Value.loopsLeft == 1) {
+                                scheduleFollow.Add(kvp.Value);
+                            }
                             melodies[kvp.Key] = kvp.Value;
                             for (int i = currLoops.Count; i < kvp.Value.d.overLoop.Count; i++) {
                                 currLoops.Add(queuedLoops[0]);
@@ -335,15 +406,18 @@ public class MusicEngine : MonoBehaviour {
                 foreach (var k in remove) {
                     queuedMelodies.Remove(k);
                 }
+                foreach (var f in scheduleFollow) {
+                    ScheduleFollow(f);
+                }
                 remove.Clear();
                 for (int i = 0; i < queuedJingles.Count;) {
                     var v = queuedJingles[i];
-                    if (v.barsLeft == 0 && beats - barStart > bars[bar] - v.beats) {
+                    if (v.barsLeft == 0 && beats - barStart > prog[bar].beats - v.beats) {
                         if (freeJingleAudio.Count > 0) {
                             var a = freeJingleAudio[^1];
                             freeJingleAudio.RemoveAt(freeJingleAudio.Count - 1);
                             a.clip = v.d.clip;
-                            a.source.PlayScheduled(startTime + (barStart + bars[bar] - v.beats) / bps + delay);
+                            a.source.PlayScheduled(startTime + (barStart + prog[bar].beats - v.beats) / bps + delay);
                             v.playingOn = a;
                             v.barsLeft = 0;
                             jingles.Add(v);
@@ -355,24 +429,6 @@ public class MusicEngine : MonoBehaviour {
                         i++;
                     }
                 }
-
-                if (currentLoop != null) {
-                    // Schedule stuff
-                    if (nextStartTime == -1 && bar == bars.Length - 1) {
-                        // Debug.Log("Scheduling: " + currentLoop.length.ToString());
-                        if (currLoops.Count == 1 && queuedLoops.Count > 0) {
-                            currLoops.Add(queuedLoops[0]);
-                            queuedLoops.RemoveAt(0);
-                        }
-                        if (currLoops.Count > 1) {
-                            QueueNextLoop(1, currLoops[1]);
-                        } else {
-                            QueueNextLoop(1, null);
-                            currLoops.Add(nextLoop.group);
-                        }
-                        // Debug.Log("Scheduled: " + nextStartTime.ToString());
-                    }
-                }
             }
 
             prevTime = time;
@@ -380,6 +436,7 @@ public class MusicEngine : MonoBehaviour {
     }
 
     public void Reset() {
+        staleGroups.Clear();
         loopAudio.Stop();
         foreach (var a in melAudio) {
             a.source.Stop();
@@ -389,6 +446,7 @@ public class MusicEngine : MonoBehaviour {
         }
         melodies.Clear();
         queuedMelodies.Clear();
+        removingMelodies.Clear();
         jingles.Clear();
         queuedJingles.Clear();
         playing = false;
@@ -413,6 +471,8 @@ public class MusicEngine : MonoBehaviour {
         loopVolume = loopVol;
         melodyVolume = melVol;
         jingleVolume = jingleVol;
+        requiredTags.Clear();
+        bannedTags.Clear();
     }
 
     public void StartPlaying() {
@@ -428,6 +488,32 @@ public class MusicEngine : MonoBehaviour {
         Reset();
         currentTrack = new RuntimeTrackData(d);
         StartPlaying();
+    }
+
+    public void AddRequiredTag(string tag) {
+        requiredTags.Add(tag);
+    }
+
+    public void RemoveRequiredTag(string tag) {
+        requiredTags.Remove(tag);
+    }
+
+    public void AddBannedTag(string tag) {
+        bannedTags.Add(tag);
+    }
+
+    public void RemoveBannedTag(string tag) {
+        bannedTags.Remove(tag);
+    }
+
+    void ScheduleFollow(RuntimeMelody d) {
+        if (d.d.follows.Count != 0) {
+            var weights = new Dictionary<(string name, string instr, string group), float>();
+            foreach (var follow in d.d.follows) {
+                weights.Add((follow.name, follow.instrument, follow.startGroup), follow.weight);
+            }
+            TryQueueMelody("", 2, null, weights, d.d.noFollowW);
+        }
     }
 
     void PlayNext() {
@@ -458,56 +544,39 @@ public class MusicEngine : MonoBehaviour {
     }
 
     public Chord? GetChordAtNextBar() {
-        double testChordStart = chordStart;
-        int i = chordInd;
-        while (testChordStart < barStart + bars[bar] && i < prog.Count) {
-            testChordStart += prog.chords[i].beats;
-            i++;
+        Debug.Log("Getting next bar length from bar " + bar.ToString() + " against bars " + prog.Length.ToString());
+        if (bar < prog.Length - 1) {
+            return prog[bar + 1].chord;
         }
-        if (i < prog.Count) {
-            return prog.chords[i].chord;
-        }
+        Debug.Log("Checking next loop bars");
         if (nextLoop is not null) {
-            return nextLoop.chordProgression.chords[0].chord;
+            return nextLoop.chordBars[0].chord;
         }
         return null;
     }
 
     public Chord? GetChordAtNextNextBar() {
-        double testChordStart = chordStart;
-        double? nextBar = GetNextBarLength();
-        if (nextBar is null) {
-            return null;
+        Debug.Log("Getting next bar length from bar " + bar.ToString() + " against bars " + prog.Length.ToString());
+        if (bar < prog.Length - 2) {
+            return prog[bar + 2].chord;
         }
-        double target = barStart + bars[bar] + nextBar.Value;
-        int i = chordInd;
-        while (testChordStart < barStart + bars[bar] && i < prog.Count) {
-            testChordStart += prog.chords[i].beats;
-            i++;
+        if (bar == prog.Length - 2) {
+            return nextLoop?.chordBars[0].chord;
         }
-        if (i < prog.Count) {
-            return prog.chords[i].chord;
-        }
-        if (nextLoop is null) {
-            return null;
-        }
-        testChordStart = 0;
-        while (testChordStart < nextLoop.bars[0] && i < nextLoop.chordProgression.Count) {
-            testChordStart += nextLoop.chordProgression.chords[i].beats;
-            i++;
-        }
-        if (i < nextLoop.chordProgression.Count) {
-            return nextLoop.chordProgression.chords[i].chord;
+        if (bar == prog.Length - 1) {
+            return nextLoop?.chordBars[1].chord;
         }
         return null;
     }
 
     public double? GetNextBarLength() {
-        if (bar < bars.Length - 1) {
-            return bars[bar + 1];
+        Debug.Log("Getting next bar length from bar " + bar.ToString() + " against bars " + prog.Length.ToString());
+        if (bar < prog.Length - 1) {
+            return prog[bar + 1].beats;
         }
-        else if (nextLoop is not null) {
-            return nextLoop.bars[0];
+        Debug.Log("Checking next loop bars");
+        if (nextLoop is not null) {
+            return nextLoop.chordBars[0].beats;
         }
         return null;
     }
@@ -545,39 +614,68 @@ public class MusicEngine : MonoBehaviour {
         }
     }
 
-    public void QueueNextLoop(int priority, string nextGroup) {
+    public void QueueNextLoop(int priority, string thisGroup, string nextGroup) {
         if (queued < priority) {
             List<RuntimeLoop> candidates = new List<RuntimeLoop>();
-            foreach (var kvp in currentLoop.nextGroups) {
-                foreach (var loop in currentTrack.loopTable[kvp.Key]) {
+            if (thisGroup is null) {
+                foreach (var kvp in currentLoop.nextGroups) {
+                    foreach (var loop in currentTrack.loopTable[kvp.Key]) {
+                        if (nextGroup != null && !loop.nextGroups.ContainsKey(nextGroup)) {
+                            continue;
+                        }
+                        candidates.Add(loop);
+                    }
+                }
+            } else {
+                foreach (var loop in currentTrack.loopTable[thisGroup]) {
                     if (nextGroup != null && !loop.nextGroups.ContainsKey(nextGroup)) {
                         continue;
                     }
                     candidates.Add(loop);
                 }
             }
-            List<double> weights = new List<double>();
-            double totalWeight = 0;
+            List<float> weights = new List<float>();
+            float totalWeight = 0;
+            var staled = staleCounts();
             foreach (var loop in candidates) {
-                double w = getWeighting(loop, currentLoop.nextGroups[loop.group], currentLoop.nextTags);
+                float groupWeight = 0;
+                if (staled.TryGetValue(loop.group, out var count)) {
+                    Debug.Log("Staling " + loop.group + " by -" + stalerFactor(count).ToString());
+                    groupWeight -= stalerFactor(count);
+                }
+                if (currentLoop.nextGroups.ContainsKey(loop.group)) {
+                    groupWeight = currentLoop.nextGroups[loop.group];
+                }
+                float w = getWeighting(loop, groupWeight, currentLoop.nextTags);
                 weights.Add(w);
                 totalWeight += w;
             }
-            double choice = UnityEngine.Random.Range(0, 1);
+            float choice = UnityEngine.Random.Range(0, totalWeight);
+            int maxChoice = 0;
+            float maxp = 0;
+            Debug.Log(choice.ToString() + " chosen from " + totalWeight);
             for (int i = 0; i < weights.Count; i++) {
                 choice -= weights[i];
-                if (choice < 0) {
+                Debug.Log("Weight " + i.ToString() + " = " + weights[i].ToString() + " choice = " + choice.ToString());
+                if (weights[i] > maxp) {
+                    maxChoice = i;
+                    maxp = weights[i];
+                }
+                if (choice <= 0.01) {
                     nextLoop = candidates[i];
                     nextStartTime = startTime + (currentLoop?.length ?? 0);
                     queued = priority;
-                    break;
+                    return;
                 }
             }
+            nextLoop = candidates[maxChoice];
+            nextStartTime = startTime + (currentLoop?.length ?? 0);
+            queued = priority;
         }
     }
 
-    public double getWeighting(RuntimeLoop loop, double groupWeight, IDictionary<string, double> nextTags) {
-        double totalWeight = groupWeight;
+    public float getWeighting(RuntimeLoop loop, float groupWeight, IDictionary<string, float> nextTags) {
+        float totalWeight = groupWeight;
         if (nextTags != null) {
             foreach (var nextTag in nextTags) {
                 if (loop.tags.Contains(nextTag.Key)) {
@@ -585,7 +683,21 @@ public class MusicEngine : MonoBehaviour {
                 }
             }
         }
-        return Math.Exp(totalWeight);
+        foreach (var tag in requiredTags) {
+            if (loop.tags.Contains(tag)) {
+                totalWeight += tagDelta;
+                Debug.Log("Required tag " + tag);
+                break;
+            }
+        }
+        foreach (var tag in bannedTags) {
+            if (loop.tags.Contains(tag)) {
+                totalWeight -= tagDelta;
+                Debug.Log("Banned tag " + tag);
+                break;
+            }
+        }
+        return Mathf.Exp(totalWeight);
     }
 
     public void QueueMelody(int startLoop, RuntimeMelody d) {
@@ -601,24 +713,59 @@ public class MusicEngine : MonoBehaviour {
         TryQueueMelody(name, 2);
     }
 
-    public bool TryQueueMelody(string name, int loops) {
-        if (!currentTrack.melodies.ContainsKey(name)) {
-            Debug.Log("Attempted to queue a unvailable nmelody " + name);
+    public bool TryQueueMelody(string name, int loops, string instrument = null, Dictionary<(string name, string instr, string group), float> nextWeights = null, float noFollowProb = -1000) {
+        if (!currentTrack.melodies.ContainsKey(name) && nextWeights is null) {
+            Debug.Log("Attempted to queue a unvailable melody " + name);
             return false;
         }
         var currCandidates = new List<MelodyData> ();
         var futureCandidates = new List<MelodyData>();
-        foreach (var instr in currentTrack.melodies[name]) {
-            if (!queuedMelodies.ContainsKey(instr.Key)) {
-                if (melodies.TryGetValue(instr.Key, out var melody)) {
-                    if (melody.loopsLeft < loops) {
-                        futureCandidates.AddRange(instr.Value);
+        if (nextWeights is null) {
+            if (instrument is null) {
+                foreach (var instr in currentTrack.melodies[name]) {
+                    if (!queuedMelodies.ContainsKey(instr.Key)) {
+                        if (melodies.TryGetValue(instr.Key, out var melody)) {
+                            if (melody.loopsLeft < loops) {
+                                futureCandidates.AddRange(instr.Value);
+                            }
+                        } else {
+                            currCandidates.AddRange(instr.Value);
+                        }
                     }
-                } else {
-                    currCandidates.AddRange(instr.Value);
+                }
+            } else {
+                if (!queuedMelodies.ContainsKey(instrument) && currentTrack.melodies[name].ContainsKey(instrument)) {
+                    if (melodies.TryGetValue(instrument, out var melody)) {
+                        if (melody.loopsLeft < loops) {
+                            futureCandidates.AddRange(currentTrack.melodies[name][instrument]);
+                        }
+                    } else {
+                        currCandidates.AddRange(currentTrack.melodies[name][instrument]);
+                    }
+                }
+            }
+        } else {
+            foreach (var kvp in nextWeights) {
+                if (!queuedMelodies.ContainsKey(kvp.Key.instr) && currentTrack.melodies[kvp.Key.name].ContainsKey(kvp.Key.instr)) {
+                    if (melodies.TryGetValue(kvp.Key.instr, out var melody)) {
+                        if (melody.loopsLeft < loops) {
+                            foreach (var cand in currentTrack.melodies[kvp.Key.name][kvp.Key.instr]) {
+                                if (cand.overLoop[0] == kvp.Key.group) {
+                                    futureCandidates.Add(cand);
+                                }
+                            }
+                        }
+                    } else {
+                        foreach (var cand in currentTrack.melodies[kvp.Key.name][kvp.Key.instr]) {
+                            if (cand.overLoop[0] == kvp.Key.group) {
+                                currCandidates.Add(cand);
+                            }
+                        }
+                    }
                 }
             }
         }
+
         // Debug.Log("Found " + (currCandidates.Count + futureCandidates.Count).ToString() + " potential candidates");
         // Candidates of next melody to play, with their starting beats
         var candidates = new List<(int i, RuntimeMelody r)>();
@@ -651,44 +798,117 @@ public class MusicEngine : MonoBehaviour {
         if (candidates.Count == 0) {
             return false;
         }
-        var choice = candidates[UnityEngine.Random.Range(0, candidates.Count)];
-        QueueMelody(choice.i, choice.r);
-        return true;
+        List<float> weights = new();
+        float totalWeight = 0f;
+
+        var staled = staleCounts();
+        float totalStaling = 0;
+        foreach (var cand in candidates) {
+            float w = 0;
+            w += cand.r.d.end / 10;
+            float staleCost = 0;
+            foreach (var s in cand.r.d.overLoop) {
+                if (staled.TryGetValue(s, out var count)) {
+                    staleCost += stalerFactor(count);
+                }
+            }
+            w -= staleCost / cand.r.d.overLoop.Count;
+            totalStaling += staleCost / cand.r.d.overLoop.Count;
+            w = Mathf.Exp(w);
+            if (nextWeights is not null) {
+                if (nextWeights.TryGetValue((cand.r.d.melName, cand.r.d.instrument, cand.r.d.overLoop[0]), out var v)) {
+                    w += v;
+                }
+            }
+            weights.Add(w);
+            totalWeight += w;
+        }
+        if (nextWeights is not null) {
+            totalWeight += Mathf.Exp(noFollowProb - totalStaling / candidates.Count);
+        }
+
+        var choice = UnityEngine.Random.Range(0, totalWeight);
+        for (int i = 0; i < weights.Count; i++) {
+            choice -= weights[i];
+            if (choice <= 0.01) {
+                QueueMelody(candidates[i].i, candidates[i].r);
+                return true;
+            }
+        }
+        return false;
     }
 
     public void QueueJingle(string name) {
+        QueueJingleTime(name);
+    }
+
+    public float QueueJingleTime(string name) {
         if (!currentTrack.jingles.ContainsKey(name)) {
             Debug.Log("Attempted to queue a unvailable jingle " + name);
-            return;
+            return 0;
         }
         var candidates = currentTrack.jingles[name];
         var finalCand = new List<RuntimeJingle>();
         double minTime = 10000;
         var nextChord = GetChordAtNextBar();
+        Debug.Log("Queueing Jingle at beat " + beats.ToString() + " with chord " + chord.ToString() + " and next chord " + nextChord.Value.ToString());
         foreach (var cand in candidates) {
-            var timeUntil = bars[bar] - cand.beatsUntilBar;
-            if (timeUntil > beats - barStart && bps < cand.bpm / 60 + 0.01 && bps > cand.bpm / 60 - 0.01 && cand.startChord.Contains(chord) && timeUntil <= minTime) {
-                if (nextChord is null || cand.endChord.Contains(nextChord.Value) && timeUntil >= minTime - 0.01) {
-                    finalCand.Add(new RuntimeJingle(cand, 0, cand.beatsUntilBar));
-                } else {
-                    finalCand.Clear();
-                    finalCand.Add(new RuntimeJingle(cand, 0, cand.beatsUntilBar));
-                    minTime = timeUntil;
+            foreach (var startTime in cand.beatsUntilBar) {
+                double timeUntil = prog[bar].beats - startTime;
+                if (timeUntil > beats - barStart && bps < cand.bpm / 60 + 0.01 && bps > cand.bpm / 60 - 0.01 &&
+                    (chord == Chord.Any || cand.startChord.Contains(Chord.Any) || cand.startChord.Contains(chord)) &&
+                    timeUntil <= minTime + 0.01 &&
+                    (nextChord is null || nextChord == Chord.Any || cand.endChord.Contains(Chord.Any) || cand.endChord.Contains(nextChord.Value))) {
+                    if (timeUntil >= minTime - 0.01) {
+                        finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                    } else {
+                        finalCand.Clear();
+                        finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                        minTime = timeUntil;
+                    }
                 }
             }
         }
         if (finalCand.Count == 0) {
-            var nextBarLength = GetNextBarLength();
+            Debug.Log("Failed to find candidates for this bar, looking at next bar.");
+            double? nextBarLength = GetNextBarLength();
             var nextNextChord = GetChordAtNextNextBar();
-            if (nextBarLength is null) {
+            minTime = 10000;
+            if (nextBarLength is not null) {
+                Debug.Log("Queueing Jingle at beat " + beats.ToString() + " with next chord " + nextChord.Value.ToString() + " and next next chord " + nextNextChord.ToString());
                 foreach (var cand in candidates) {
-                    var timeUntil = nextBarLength.Value - cand.beatsUntilBar;
-                    if (timeUntil > 0 && bps < cand.bpm / 60 + 0.01 && bps > cand.bpm / 60 - 0.01 && (nextChord is null || cand.startChord.Contains(nextChord.Value)) && timeUntil <= minTime) {
-                        if (nextNextChord is null || cand.endChord.Contains(nextNextChord.Value) && timeUntil >= minTime - 0.01) {
-                            finalCand.Add(new RuntimeJingle(cand, 0, cand.beatsUntilBar));
+                    foreach (var startTime in cand.beatsUntilBar) {
+                        var timeUntil = nextBarLength.Value - startTime;
+                        if (timeUntil >= -0.05 && bps < cand.bpm / 60 + 0.01 && bps > cand.bpm / 60 - 0.01 &&
+                            (nextChord is null || nextChord.Value == Chord.Any || cand.startChord.Contains(Chord.Any) || cand.startChord.Contains(nextChord.Value)) &&
+                            timeUntil <= minTime + 0.01 &&
+                            (nextNextChord is null || nextNextChord.Value == Chord.Any || cand.endChord.Contains(Chord.Any) || cand.endChord.Contains(nextNextChord.Value))) {
+                            if (timeUntil >= minTime - 0.01) {
+                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                            } else {
+                                finalCand.Clear();
+                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                                minTime = timeUntil;
+                            }
+                        }
+                    }
+                }
+            } else {
+                Debug.Log("Next bar length is null, failed to check next bar.");
+            }
+        }
+        if (finalCand.Count == 0) {
+            Debug.Log("Failed to find candidates for next bar, choosing randomly.");
+            foreach (var cand in candidates) {
+                foreach (var startTime in cand.beatsUntilBar) {
+                    double timeUntil = prog[bar].beats - startTime;
+                    if (timeUntil > beats - barStart && bps < cand.bpm / 60 + 0.01 && bps > cand.bpm / 60 - 0.01 &&
+                        timeUntil <= minTime + 0.01) {
+                        if (timeUntil >= minTime - 0.01) {
+                            finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps));
                         } else {
                             finalCand.Clear();
-                            finalCand.Add(new RuntimeJingle(cand, 0, cand.beatsUntilBar));
+                            finalCand.Add(new RuntimeJingle(cand, 0, startTime, (timeUntil - (beats - barStart) + cand.timeOffset) / bps));
                             minTime = timeUntil;
                         }
                     }
@@ -696,11 +916,32 @@ public class MusicEngine : MonoBehaviour {
             }
         }
         if (finalCand.Count == 0) {
-            foreach (var cand in candidates) {
-                finalCand.Add(new RuntimeJingle(cand, 1, cand.beatsUntilBar));
+            Debug.Log("Failed to find candidates for this bar, looking at next bar.");
+            double? nextBarLength = GetNextBarLength();
+            minTime = 10000;
+            if (nextBarLength is not null) {
+                foreach (var cand in candidates) {
+                    foreach (var startTime in cand.beatsUntilBar) {
+                        var timeUntil = nextBarLength.Value - startTime;
+                        if (timeUntil >= -0.05 && bps < cand.bpm / 60 + 0.01 && bps > cand.bpm / 60 - 0.01 &&
+                            timeUntil <= minTime + 0.01) {
+                            if (timeUntil >= minTime - 0.01) {
+                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                            } else {
+                                finalCand.Clear();
+                                finalCand.Add(new RuntimeJingle(cand, 1, startTime, (nextBarLength.Value / bps + timeUntil - (beats - barStart) + cand.timeOffset) / bps));
+                                minTime = timeUntil;
+                            }
+                        }
+                    }
+                }
+            } else {
+                Debug.Log("Next bar length is null, failed to check next bar.");
             }
         }
         var choice = finalCand[UnityEngine.Random.Range(0, finalCand.Count)];
         queuedJingles.Add(choice);
+        Debug.Log("Queued jingle to play in " + choice.realTimeStart.ToString());
+        return (float)choice.realTimeStart;
     }
 }

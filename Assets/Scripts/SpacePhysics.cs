@@ -7,6 +7,9 @@ public class SpacePhysics : MonoBehaviour
     public float stickThreshold = 5f;
     public float surfaceOffset = 0.5f;
     public float friction = 2f;
+    public float airResistance = 0.5f;
+    public float velocityInferenceDamping = 20f;
+    public float maximumSpeed = 20f;
 
     [HideInInspector] public Vector2 velocity = Vector2.right * 5f;
     [HideInInspector] public float planetPos = 0f;
@@ -15,9 +18,17 @@ public class SpacePhysics : MonoBehaviour
     [HideInInspector] public Planet closestPlanet;
 
     [HideInInspector] public bool onPlanet;
+
+    private Vector2 prevPosition;
+    private Vector2 inferredVelocity;
     
     private void FixedUpdate()
     {
+        inferredVelocity = Vector2.Lerp(inferredVelocity, ((Vector2)transform.position - prevPosition) / Time.fixedDeltaTime, 1f - Mathf.Exp(-velocityInferenceDamping * Time.fixedDeltaTime));
+        prevPosition = transform.position;
+        
+        Debug.DrawRay(Vector2.zero, inferredVelocity.magnitude * Vector2.right, Color.red);
+        
         if (onPlanet) DoPlanetPhysics();
         else DoSpacePhysics();
     }
@@ -28,7 +39,10 @@ public class SpacePhysics : MonoBehaviour
 
         // We are using 1/dist gravity instead of 1/dist^2 because it feels nicer
         var planetCoreDelta = (Vector2)(closestPlanet.transform.position - transform.position);
-        velocity += planetCoreDelta.normalized * closestPlanet.gravity / planetCoreDelta.magnitude;
+        velocity += planetCoreDelta.normalized * closestPlanet.gravity / Mathf.Max(1f, planetCoreDelta.magnitude);
+        velocity = Vector2.Lerp(velocity, Vector2.zero, 1f - Mathf.Exp(-airResistance * Time.deltaTime));
+        
+        velocity = Vector2.ClampMagnitude(velocity, maximumSpeed);
 
         transform.position += (Vector3)velocity * Time.deltaTime;
     }
@@ -60,8 +74,10 @@ public class SpacePhysics : MonoBehaviour
         velocity = Vector2.zero; // Cut linear velocity since we are on a planet now
     }
 
-    private void Detach()
+    public void Detach()
     {
+        // Restore inferred velocity
+        velocity += inferredVelocity;
         onPlanet = false;
     }
 

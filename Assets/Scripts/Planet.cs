@@ -8,6 +8,7 @@ public class Planet : MonoBehaviour
     public float radius = 5f;
     public float wobbleStrength = 0.01f;
     public float gravity = 5f;
+    public float impactStrength = 1f;
     public List<NoiseLayer> layers = new();
     
     [Serializable]
@@ -25,6 +26,7 @@ public class Planet : MonoBehaviour
         public float influence;
         public float vel;
         public float pos;
+        public float bandwidth;
     }
     
     public static List<Planet> Planets = new();
@@ -70,10 +72,16 @@ public class Planet : MonoBehaviour
             var diff = (impact.angle - angle) % (Mathf.PI * 2f);
             if (diff < 0) diff += Mathf.PI * 2f;
             var fracDist = Mathf.Min(diff, Mathf.PI * 2 - diff);
-            var influence = Mathf.Max(0, 1 - fracDist * radius) * impact.influence;
-            dist -= influence * impact.pos;
+            var influence = Bump(fracDist * radius / impact.bandwidth) * impact.influence;
+            dist -= influence * impactStrength * impact.pos;
         }
         return dist;
+    }
+
+    private static float Bump(float x)
+    {
+        if (x >= 1) return 0;
+        return Mathf.Exp(1f / (x * x - 1f));
     }
 
     public float AngleTo(Vector2 position)

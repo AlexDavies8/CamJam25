@@ -10,21 +10,21 @@ public enum Tag {
 
 [Serializable]
 public enum Chord {
-    A, Am, Bb, Bbm, B, Bm, C, Cm, Db, CSm, D, Dm, Eb, Ebm, E, Em, F, Fm, FS, FSm, G, Gm, Ab, GSm, None
+    A, Am, Bb, Bbm, B, Bm, C, Cm, Db, CSm, D, Dm, Eb, Ebm, E, Em, F, Fm, FS, FSm, G, Gm, Ab, GSm, Any, Other
 }
 
 [Serializable]
 public struct NextGroup {
     public string next;
-    public double weighting;
+    public float weighting;
 
-    public NextGroup(string next, double weighting) { this.next = next; this.weighting = weighting; }
+    public NextGroup(string next, float weighting) { this.next = next; this.weighting = weighting; }
 }
 
 [Serializable]
 public struct NextTag {
     public string tag;
-    public double weighting;
+    public float weighting;
 }
 
 [Serializable]
@@ -69,8 +69,7 @@ public class LoopData : ScriptableObject {
     public List<string> tags;                   // Useful tags
     public List<NextGroup> nextGroups;          // What next groups to choose from
     public List<NextTag> nextTags;              // Tag alterations
-    public ChordProgression chordProgression;   // Loop's chord progression
-    public double[] bars;                       // Bar lengths
+    public ChordTerm[] chordBars;          // Loop's chord progression
 }
 
 public class RuntimeLoop {
@@ -78,12 +77,11 @@ public class RuntimeLoop {
     public string group;
     public double bps;
     public HashSet<string> tags;
-    public Dictionary<string, double> nextGroups;
-    public Dictionary<string, double> nextTags;
-    public ChordProgression chordProgression;       // Loop's chord progression
+    public Dictionary<string, float> nextGroups;
+    public Dictionary<string, float> nextTags;
+    public ChordTerm[] chordBars;        // Loop's chord progression
     public double beats;
     public double length;
-    public double[] bars;
 
     public RuntimeLoop(LoopData d) {
         clip = d.clip;
@@ -101,12 +99,11 @@ public class RuntimeLoop {
         foreach(var next in d.nextTags) {
             nextTags[next.tag] = next.weighting;
         }
-        chordProgression = d.chordProgression;
+        chordBars = d.chordBars;
         beats = 0;
-        foreach (var beat in d.bars) {
-            beats += beat;
+        foreach (var beat in d.chordBars) {
+            beats += beat.beats;
         }
         length = beats / bps;
-        bars = d.bars;
     }
 }

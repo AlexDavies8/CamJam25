@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ecbffb4e2af0eee4892d8269b715c4df, type: 3}
+  m_Name: System1ThemeA1-Piano
+  m_EditorClassIdentifier: 
+  clip: {fileID: 8300000, guid: c1b38bbce6f889f4ca407e4abf5d7c0a, type: 3}
+  beatsIntoLoop: 0
+  overLoop:
+  - A
+  end: 1
+  instrument: Piano
+  melName: Theme
+  randomCall: 0
+  follows:
+  - name: Theme2
+    instrument: Piano
+    startGroup: A
+    weight: 0.4
+  - name: Theme2
+    instrument: Piano
+    startGroup: B
+    weight: 0.1
+  noFollowW: -10
+  beatsToKill: 1
