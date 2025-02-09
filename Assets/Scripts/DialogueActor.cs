@@ -37,10 +37,10 @@ public class DialogueActor : MonoBehaviour
             timeToStart -= Time.deltaTime;
             if (timeToStart - dialoguePreAppear <= 0) {
                 talking = true;
-                dialogueBox.gameObject.SetActive(true);
+                dialogueBox?.gameObject.SetActive(true);
             }
             if (timeToStart <= 0) {
-                dialogueBox.gameObject.SetActive(true);
+                dialogueBox?.gameObject.SetActive(true);
                 preparing = false;
             }
         }
@@ -53,7 +53,7 @@ public class DialogueActor : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (dialogueBox.enabled)
+        if (dialogueBox is not null && dialogueBox.enabled)
         {
             dialogueBox.transform.up = Vector2.up;
             var delta = dialogueBox.transform.position - transform.position;
@@ -74,7 +74,7 @@ public class DialogueActor : MonoBehaviour
 
     private void EndDialog()
     {
-        dialogueBox.gameObject.SetActive(false);
+        dialogueBox?.gameObject.SetActive(false);
         talking = false;
     }
 }

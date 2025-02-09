@@ -20,4 +20,6 @@ public class JingleData : ScriptableObject {
     public List<Chord> endChord;      // The ending chord the jingle expects
     public string jingleName;   // The name of the jingle (used for triggering)
     public double timeOffset;
+    public bool freeStart = false;
+    public float volume = 1;
 }

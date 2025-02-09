@@ -20,6 +20,9 @@ MonoBehaviour:
   - 1.5
   - 4.5
   barParity: 0
-  startChord: 10000000
+  startChord: 100000000c000000
   endChord: 18000000
   jingleName: Tree
+  timeOffset: 0
+  freeStart: 0
+  volume: 1
