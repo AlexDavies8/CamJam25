@@ -22,3 +22,5 @@ MonoBehaviour:
   endChord: 10000000
   jingleName: PreExpand
   timeOffset: 3
+  freeStart: 0
+  volume: 1

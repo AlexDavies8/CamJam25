@@ -10,17 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9d0a222c5ed7d844fbb37d35b3643683, type: 3}
-  m_Name: System1Expand3-Clarinet
+  m_Name: System1FlowerEb
   m_EditorClassIdentifier: 
-  clip: {fileID: 8300000, guid: 78950aa4ee6343d429f4f2575cba2d30, type: 3}
+  clip: {fileID: 8300000, guid: 595681d9c0950ee42b0c0a362de20a50, type: 3}
   bpm: 130
   beatsUntilBar:
   - 3
   - 6
-  barParity: 0
-  startChord: 10000000
-  endChord: 0c000000
-  jingleName: PreExpand
-  timeOffset: 3
+  - 1.5
+  - 4.5
+  barParity: 1
+  startChord: 0c000000
+  endChord: 18000000
+  jingleName: Flower
+  timeOffset: 0
   freeStart: 0
   volume: 1

@@ -10,6 +10,8 @@ public class PlanetGrowJingle : MonoBehaviour
     public float bounceWidth = 3f;
     public float bounceVelocity = 2f;
     public float playerBounceVelocity = 8f;
+
+    public MusicEngine musicEngine;
     
     public PlayerController player;
 
@@ -17,6 +19,7 @@ public class PlanetGrowJingle : MonoBehaviour
     {
         if (PitchDetector.Instance.RecognisePattern(notePattern, maxError))
         {
+            var timing = musicEngine.QueueJingleTime("Expand");
             var planet = player.physics.closestPlanet;
             var angle = planet.AngleTo(player.transform.position);
             planet.impacts.Add(new Planet.Impact { angle = angle, pos = 0, vel = -bounceVelocity, influence = bounceInfluence, bandwidth = bounceWidth });

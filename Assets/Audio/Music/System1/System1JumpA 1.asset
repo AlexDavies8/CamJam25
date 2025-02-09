@@ -10,17 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9d0a222c5ed7d844fbb37d35b3643683, type: 3}
-  m_Name: System1Expand3-Clarinet
+  m_Name: System1JumpA 1
   m_EditorClassIdentifier: 
-  clip: {fileID: 8300000, guid: 78950aa4ee6343d429f4f2575cba2d30, type: 3}
+  clip: {fileID: 8300000, guid: d36789e72adc26a458d50ffcd027771a, type: 3}
   bpm: 130
   beatsUntilBar:
+  - 0.5
+  - 1
+  - 1.5
+  - 2
+  - 2.5
   - 3
+  - 3.5
+  - 4
+  - 4.5
+  - 5
+  - 5.5
   - 6
   barParity: 0
-  startChord: 10000000
-  endChord: 0c000000
-  jingleName: PreExpand
-  timeOffset: 3
-  freeStart: 0
-  volume: 1
+  startChord: 00000000
+  endChord: 18000000
+  jingleName: Jump
+  timeOffset: 0
+  freeStart: 1
+  volume: 0.5

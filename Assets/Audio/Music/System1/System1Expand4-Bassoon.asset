@@ -22,3 +22,5 @@ MonoBehaviour:
   endChord: 0c000000
   jingleName: Expand
   timeOffset: 3
+  freeStart: 0
+  volume: 1
