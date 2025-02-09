@@ -21,8 +21,9 @@ MonoBehaviour:
   melName: Theme
   randomCall: 0
   follows:
-  - name: Theme
+  - name: Theme2
     instrument: Clarinet
     startGroup: B
-    weight: 2
+    weight: 0
   noFollowW: -10
+  beatsToKill: 0

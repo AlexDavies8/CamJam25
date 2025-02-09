@@ -16,6 +16,8 @@ MonoBehaviour:
   loops:
   - {fileID: 11400000, guid: 06471e60a3fec084fa63c4e8167d42f1, type: 2}
   - {fileID: 11400000, guid: b917602d7d1718646bf202493fb41621, type: 2}
+  - {fileID: 11400000, guid: d7b5e39665f67cc4396fc8a7c441c0d5, type: 2}
+  - {fileID: 11400000, guid: 3a46f4ea77788d044b119f0befd9c647, type: 2}
   melodies:
   - {fileID: 11400000, guid: e2dfc62d6de287b4e963d0b820b8acb8, type: 2}
   - {fileID: 11400000, guid: af872ed63a7cd1f48800cf22b8359a51, type: 2}
@@ -25,6 +27,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: a5c763d657ad26f43ace4b01bad3d43b, type: 2}
   - {fileID: 11400000, guid: f72f1318474c58a43a30c0322d3f8f29, type: 2}
   - {fileID: 11400000, guid: b3083a9d131aaab4882464d2c53f03da, type: 2}
+  - {fileID: 11400000, guid: eeedf2a01883c9645b4d489e5e8fab7f, type: 2}
+  - {fileID: 11400000, guid: f3bb570d8e931004895c26804aedd827, type: 2}
+  - {fileID: 11400000, guid: 190041a10421c5341857a642d641c0ef, type: 2}
   jingles:
   - {fileID: 11400000, guid: a78ad56cc414d634c963be885ec96cf0, type: 2}
   - {fileID: 11400000, guid: d55b7b268a44519438c6abc412441127, type: 2}

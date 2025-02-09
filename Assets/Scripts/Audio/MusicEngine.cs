@@ -172,6 +172,10 @@ public class MusicEngine : MonoBehaviour {
     public Func<float, float> stalerFactor = (float x) => (Mathf.Exp(x / 10) - 1) + (x > 3 ? 0.5f : 0) + (x > 6 ? 1f : 0) + (x > 7 ? 2f : 0);
     public float stalerAlpha = 0.7f;
 
+    public List<string> requiredTags = new();
+    public List<string> bannedTags = new();
+    public float tagDelta = 5;
+
     public Dictionary<string, float> staleCounts() {
         var r = new Dictionary<string, float>();
         var alpha = Mathf.Pow(stalerAlpha, stalerMemory);
@@ -333,6 +337,30 @@ public class MusicEngine : MonoBehaviour {
                             ++i;
                         }
                     }
+
+                    if (currentLoop != null) {
+                        // Schedule stuff
+                        if (nextStartTime == -1 && bar >= prog.Length - 1) {
+                            // Debug.Log("Scheduling: " + currentLoop.length.ToString());
+                            if (currLoops.Count == 1 && queuedLoops.Count > 0) {
+                                currLoops.Add(queuedLoops[0]);
+                                queuedLoops.RemoveAt(0);
+                            }
+                            if (currLoops.Count == 2 && queuedLoops.Count > 0) {
+                                currLoops.Add(queuedLoops[0]);
+                                queuedLoops.RemoveAt(0);
+                            }
+                            if (currLoops.Count > 2) {
+                                QueueNextLoop(1, currLoops[1], currLoops[2]);
+                            } else if (currLoops.Count > 1) {
+                                QueueNextLoop(1, currLoops[1], null);
+                            } else {
+                                QueueNextLoop(1, null, null);
+                                currLoops.Add(nextLoop.group);
+                            }
+                            // Debug.Log("Scheduled: " + nextStartTime.ToString());
+                        }
+                    }
                 }
                 for (int i = 0; i < jingles.Count;) {
                     var v = jingles[i];
@@ -399,30 +427,6 @@ public class MusicEngine : MonoBehaviour {
                         i++;
                     }
                 }
-
-                if (currentLoop != null) {
-                    // Schedule stuff
-                    if (nextStartTime == -1 && bar >= prog.Length - 2) {
-                        // Debug.Log("Scheduling: " + currentLoop.length.ToString());
-                        if (currLoops.Count == 1 && queuedLoops.Count > 0) {
-                            currLoops.Add(queuedLoops[0]);
-                            queuedLoops.RemoveAt(0);
-                        }
-                        if (currLoops.Count == 2 && queuedLoops.Count > 0) {
-                            currLoops.Add(queuedLoops[0]);
-                            queuedLoops.RemoveAt(0);
-                        }
-                        if (currLoops.Count > 2) {
-                            QueueNextLoop(1, currLoops[1], currLoops[2]);
-                        } else if (currLoops.Count > 1) {
-                            QueueNextLoop(1, currLoops[1], null);
-                        } else {
-                            QueueNextLoop(1, null, null);
-                            currLoops.Add(nextLoop.group);
-                        }
-                        // Debug.Log("Scheduled: " + nextStartTime.ToString());
-                    }
-                }
             }
 
             prevTime = time;
@@ -440,6 +444,7 @@ public class MusicEngine : MonoBehaviour {
         }
         melodies.Clear();
         queuedMelodies.Clear();
+        removingMelodies.Clear();
         jingles.Clear();
         queuedJingles.Clear();
         playing = false;
@@ -464,6 +469,8 @@ public class MusicEngine : MonoBehaviour {
         loopVolume = loopVol;
         melodyVolume = melVol;
         jingleVolume = jingleVol;
+        requiredTags.Clear();
+        bannedTags.Clear();
     }
 
     public void StartPlaying() {
@@ -479,6 +486,22 @@ public class MusicEngine : MonoBehaviour {
         Reset();
         currentTrack = new RuntimeTrackData(d);
         StartPlaying();
+    }
+
+    public void AddRequiredTag(string tag) {
+        requiredTags.Add(tag);
+    }
+
+    public void RemoveRequiredTag(string tag) {
+        requiredTags.Remove(tag);
+    }
+
+    public void AddBannedTag(string tag) {
+        bannedTags.Add(tag);
+    }
+
+    public void RemoveBannedTag(string tag) {
+        bannedTags.Remove(tag);
     }
 
     void ScheduleFollow(RuntimeMelody d) {
@@ -626,16 +649,26 @@ public class MusicEngine : MonoBehaviour {
                 totalWeight += w;
             }
             float choice = UnityEngine.Random.Range(0, totalWeight);
-            // Debug.Log(choice.ToString() + " chosen from " + weights.ToString());
+            int maxChoice = 0;
+            float maxp = 0;
+            Debug.Log(choice.ToString() + " chosen from " + totalWeight);
             for (int i = 0; i < weights.Count; i++) {
                 choice -= weights[i];
+                Debug.Log("Weight " + i.ToString() + " = " + weights[i].ToString() + " choice = " + choice.ToString());
+                if (weights[i] > maxp) {
+                    maxChoice = i;
+                    maxp = weights[i];
+                }
                 if (choice <= 0.01) {
                     nextLoop = candidates[i];
                     nextStartTime = startTime + (currentLoop?.length ?? 0);
                     queued = priority;
-                    break;
+                    return;
                 }
             }
+            nextLoop = candidates[maxChoice];
+            nextStartTime = startTime + (currentLoop?.length ?? 0);
+            queued = priority;
         }
     }
 
@@ -646,6 +679,20 @@ public class MusicEngine : MonoBehaviour {
                 if (loop.tags.Contains(nextTag.Key)) {
                     totalWeight += nextTag.Value;
                 }
+            }
+        }
+        foreach (var tag in requiredTags) {
+            if (loop.tags.Contains(tag)) {
+                totalWeight += tagDelta;
+                Debug.Log("Required tag " + tag);
+                break;
+            }
+        }
+        foreach (var tag in bannedTags) {
+            if (loop.tags.Contains(tag)) {
+                totalWeight -= tagDelta;
+                Debug.Log("Banned tag " + tag);
+                break;
             }
         }
         return Mathf.Exp(totalWeight);

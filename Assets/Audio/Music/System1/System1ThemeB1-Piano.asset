@@ -19,7 +19,8 @@ MonoBehaviour:
   - A
   end: 2
   instrument: Piano
-  melName: Theme
+  melName: Theme2
   randomCall: 0
   follows: []
   noFollowW: 0
+  beatsToKill: 0

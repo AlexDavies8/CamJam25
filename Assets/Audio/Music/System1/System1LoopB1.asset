@@ -15,12 +15,13 @@ MonoBehaviour:
   clip: {fileID: 8300000, guid: 7b5d02f297208bc44888deed11f269be, type: 3}
   bpm: 130
   group: B
-  tags: []
+  tags:
+  - NoDrums
   nextGroups:
   - next: A
-    weighting: 1
+    weighting: 0.1
   - next: B
-    weighting: 1
+    weighting: 0.1
   nextTags: []
   chordBars:
   - chord: 16
