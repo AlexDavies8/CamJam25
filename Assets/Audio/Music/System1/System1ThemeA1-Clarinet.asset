@@ -21,8 +21,17 @@ MonoBehaviour:
   melName: Theme
   randomCall: 0
   follows:
-  - name: Theme
+  - name: Theme2
     instrument: Bassoon
     startGroup: B
-    weight: 2
-  noFollowW: 0
+    weight: 0.2
+  - name: Theme2
+    instrument: Bassoon
+    startGroup: A
+    weight: 0.2
+  - name: Theme2
+    instrument: Clarinet
+    startGroup: B
+    weight: 0
+  noFollowW: -10
+  beatsToKill: 0

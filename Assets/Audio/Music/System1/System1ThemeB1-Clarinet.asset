@@ -18,11 +18,12 @@ MonoBehaviour:
   - B
   end: 1
   instrument: Clarinet
-  melName: Theme
+  melName: Theme2
   randomCall: 0
   follows:
-  - name: Theme
+  - name: Theme2
     instrument: Bassoon
     startGroup: B
-    weight: 2
-  noFollowW: 0
+    weight: 0.1
+  noFollowW: -10
+  beatsToKill: 0

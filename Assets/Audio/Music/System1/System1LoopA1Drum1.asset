@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 97fbde3e6962d9249bf5ba1bce7ad65b, type: 3}
-  m_Name: System1LoopA1
+  m_Name: System1LoopA1Drum1
   m_EditorClassIdentifier: 
-  clip: {fileID: 8300000, guid: 4a78468a7661e044fa2491d82435021a, type: 3}
+  clip: {fileID: 8300000, guid: 57a034fb9927d194ea45519b7720a8a2, type: 3}
   bpm: 130
   group: A
   tags:
-  - NoDrums
+  - Drums
   nextGroups:
   - next: A
     weighting: 0.4
