@@ -381,10 +381,10 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: 0.2916667
-    y: 0.22222222
-    width: 0.4166667
-    height: 0.5555555
+    x: 0
+    y: 0
+    width: 1
+    height: 1
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 34
@@ -431,6 +431,7 @@ GameObject:
   - component: {fileID: 1070767995}
   - component: {fileID: 1070767996}
   - component: {fileID: 1070767997}
+  - component: {fileID: 1070767998}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -561,7 +562,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   notePattern: 09000000080000000900000004000000
-  maxError: 2
+  maxError: 3
   bounceInfluence: 3
   bounceWidth: 3
   bounceVelocity: 6
@@ -597,6 +598,22 @@ MonoBehaviour:
   options:
   - name: Theme
     instr: Piano
+--- !u!114 &1070767998
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1070767990}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e664155c9564fc7897d96ffbe7fbbb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  notePattern: 090000000b00000001000000090000000800000004000000
+  maxError: 5
+  player: {fileID: 1070767991}
+  musicEngine: {fileID: 935579583}
 --- !u!1001 &1650995915
 PrefabInstance:
   m_ObjectHideFlags: 0
