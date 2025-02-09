@@ -381,10 +381,10 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: 0.2916667
-    y: 0.22222222
-    width: 0.4166667
-    height: 0.5555555
+    x: 0
+    y: 0
+    width: 1
+    height: 1
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 34
@@ -560,7 +560,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   notePattern: 09000000080000000900000004000000
-  maxError: 2
+  maxError: 3
   bounceInfluence: 3
   bounceWidth: 3
   bounceVelocity: 6
