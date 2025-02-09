@@ -8,7 +8,7 @@ public class PlanetCropJingle : MonoBehaviour
 
     public PlayerController player;
 
-    public GameObject cropPrefab;
+    public MusicEngine musicEngine;
 
     private void FixedUpdate()
     {
@@ -20,6 +20,8 @@ public class PlanetCropJingle : MonoBehaviour
             if (cropPlanet != null)
             {
                 cropPlanet.SpawnCrops(planet.AngleTo(player.transform.position));
+
+                musicEngine.QueueJingle("Flower");
             }
         }
     }
