@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Numerics;
 using UnityEngine;
 
@@ -6,9 +7,29 @@ public class PitchDetector : MonoBehaviour
 {
     public string device;
 
+    public float startThreshold = 300f;
+    public float endThreshold = 200f;
+    public float minLength = 0.1f;
+    public float maxPause = 0.1f;
+    public float historyLength = 10f;
+
     private AudioClip clip;
     private int sampleRate = 44100;
-    private int bufferSize = 1024 * 8;
+    private int bufferSize = 1024 * 16;
+
+    public float volume { get; private set; }
+    public List<Note> recentNotes = new();
+
+    private bool hasCurrentNote;
+    private Note currentNote;
+
+    [Serializable]
+    public struct Note
+    {
+        public float start;
+        public float end;
+        public int note;
+    }
 
     private void Awake()
     {
@@ -27,14 +48,64 @@ public class PitchDetector : MonoBehaviour
             if (samples is null) return;
             var buckets = BucketNotes(FFT(samples), sampleRate);
 
+            double vol = 0;
             var max = 0;
             for (int i = 0; i < buckets.Length; i++)
             {
                 if (buckets[i] > buckets[max]) max = i;
+                vol += buckets[i];
             }
+            volume = (float)vol;
             
-            string[] noteNames = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-            if (buckets[max] > 500) Debug.Log($"Note: {noteNames[max]}, Magnitude: {buckets[max]}");
+            //string[] noteNames = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+            if (!hasCurrentNote && buckets[max] > startThreshold)
+            {
+                hasCurrentNote = true;
+                currentNote = new Note { start = Time.time, note = max };
+            }
+            if (hasCurrentNote)
+            {
+                var note = currentNote;
+                if (max == note.note && buckets[max] > endThreshold)
+                {
+                    note.end = Time.time;
+                }
+                if (max != note.note && buckets[max] > startThreshold)
+                {
+                    if (note.end - note.start > minLength) recentNotes.Add(note);
+                    note = new Note { start = Time.time, end = Time.time, note = max };
+                }
+
+                if (Time.time - note.end > maxPause)
+                {
+                    if (note.end - note.start > minLength) recentNotes.Add(note);
+                    hasCurrentNote = false;
+                }
+                else currentNote = note;
+            }
+
+            for (int i = 0; i < recentNotes.Count; i++)
+            {
+                if (Time.time - recentNotes[i].end < historyLength) break;
+                recentNotes.RemoveAt(0);
+            }
+
+            int[] targets = new[] { 0, 5, 4, 2, 4, 0 };
+            int errors = 0;
+            int idx = 0;
+            for (int i = 0; i < recentNotes.Count; i++)
+            {
+                if (idx >= targets.Length) break;
+                if (recentNotes[i].note == targets[idx])
+                {
+                    idx++;
+                } else if (idx > 0) errors++;
+            }
+            if (idx >= targets.Length && errors <= 1)
+            {
+                Debug.Log("MAGIC!!!");
+                recentNotes.Clear();
+            }
         }
     }
 
