@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97fbde3e6962d9249bf5ba1bce7ad65b, type: 3}
+  m_Name: System1LoopA1
+  m_EditorClassIdentifier: 
+  clip: {fileID: 8300000, guid: 4a78468a7661e044fa2491d82435021a, type: 3}
+  bpm: 130
+  group: A
+  tags: []
+  nextGroups:
+  - next: A
+    weighting: 1.5
+  - next: B
+    weighting: 1
+  nextTags: []
+  chordBars:
+  - chord: 0
+    beats: 6
+  - chord: 0
+    beats: 6
+  - chord: 20
+    beats: 6
+  - chord: 20
+    beats: 6

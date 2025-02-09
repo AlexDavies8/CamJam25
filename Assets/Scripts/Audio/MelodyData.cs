@@ -3,6 +3,14 @@ using System;
 using UnityEngine;
 
 [Serializable]
+public class MelodyFollow {
+    public string name;
+    public string instrument;
+    public string startGroup;
+    public float weight;
+}
+
+[Serializable]
 [CreateAssetMenu(fileName = "MelodyData", menuName = "Music Data/MelodyData")]
 /**
  * Stores data for melodies
@@ -19,4 +27,6 @@ public class MelodyData : ScriptableObject {
     public string instrument;           // The instrument the melody is in
     public string melName;              // The name of the melody (used to trigger)
     public double randomCall;           // If the melody can be randomly triggered
+    public List<MelodyFollow> follows;  // 
+    public float noFollowW;
 }
